@@ -74,9 +74,9 @@ class TogoProcessor(BaseProcessor):
 
         # check all the lat labels, lon labels agree
         for i in range(1, len(lon_labels)):
-            assert (df[lon_labels[i - 1]] == df[lon_labels[i]]).all()
+            assert (df[lon_labels[i - 1]].round(10) == df[lon_labels[i]].round(10)).all() # added round(10) to avoid numerical error of matching floats
         for i in range(1, len(lat_labels)):
-            assert (df[lat_labels[i - 1]] == df[lat_labels[i]]).all()
+            assert (df[lat_labels[i - 1]].round(10) == df[lat_labels[i]].round(10)).all() # idem
 
         # now, we only want to keep the labels where at least two labellers agreed
         df.loc[:, "sum"] = df[labels].sum(axis=1)

@@ -57,6 +57,20 @@ data
 └──lightning_logs // created by pytorch_lightning when training models
 ```
 
+### Steps
+```
+1. cd scripts
+2. python -c "from export.py import export_geowiki; export_geowiki()"
+3. python -c "from process.py import process_geowiki; process_geowiki()"
+4. python -c "from export.py import export_geowiki_sentinel_ee; export_geowiki_sentinel_ee() ## --> this might take up to 10 days and must be done by batches of 3000 tasks at a time (i.e. GEE task limit)."
+5. python -c "from process.py import process_togo; process_togo()"
+6. python -c "from export.py import export_togo; export_togo()"
+7. Repeat 6., but manually changing evaluation_set to False in exporter.export_for_labels inside export_togo() 
+8. python -c "from export.py import export_region; export_region()"
+9. python -c "from engineer.py import engineer_geowiki; export_geowiki()"
+10. python -c "from engineer.py import engineer_togo; export_togo()"
+```
+
 ## Setup
 
 [Anaconda](https://www.anaconda.com/download/#macos) running python 3.6 is used as the package manager. To get set up

@@ -20,10 +20,10 @@ def landcover_mapper():
 
     data_dir = "../data"
 
-    test_folder = Path("../data/raw/earth_engine_region")
+    test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/crop-type-datasets/Togo/tifs/earth_engine_region/Takeout/Drive/earth_engine_region")
     test_files = test_folder.glob("*.tif")
 
-    model_path = "../data/model.ckpt"
+    model_path = "../data/epoch=9.ckpt"
     print(f"Using model {model_path}")
 
     model = LandCoverMapper.load_from_checkpoint(model_path)

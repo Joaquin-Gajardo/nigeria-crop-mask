@@ -77,13 +77,34 @@ class GeoWikiSentinelExporter(BaseSentinelExporter):
             surrounding_metres=surrounding_metres,
         )
 
+        # check for idxs already downloaded
+        from pathlib import Path
+        existing_idxs = []
+        for filepath in Path.iterdir(self.output_folder):
+            filename = filepath.as_posix().split('/')[-1]
+            if filename.endswith('.tif'):
+                existing_idx = int(filename.split('_')[0])
+                existing_idxs.append(existing_idx)
+        existing_idxs.sort()
+
+        tasks = 0
+        last_idx = -1
         for idx, bounding_box in enumerate(bounding_boxes_to_download):
-            self._export_for_polygon(
-                polygon=bounding_box.to_ee_polygon(),
-                polygon_identifier=idx,
-                start_date=start_date,
-                end_date=end_date,
-                days_per_timestep=days_per_timestep,
-                checkpoint=checkpoint,
-                monitor=monitor,
-            )
+            if (idx not in existing_idxs) and idx > last_idx:
+                self._export_for_polygon(
+                    polygon=bounding_box.to_ee_polygon(),
+                    polygon_identifier=idx,
+                    start_date=start_date,
+                    end_date=end_date,
+                    days_per_timestep=days_per_timestep,
+                    checkpoint=checkpoint,
+                    monitor=monitor,
+                )
+                
+                tasks += 1
+            #else:
+            #    print('Already stored locally. Skipping')
+            if tasks >= 3000:
+                print('Too many tasks for Google Earth Engine. Stopping.')
+                break
+        print(tasks)

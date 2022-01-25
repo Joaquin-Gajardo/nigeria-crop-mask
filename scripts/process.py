@@ -20,5 +20,5 @@ def process_togo():
 
 
 if __name__ == "__main__":
-    # process_geowiki()
+    #process_geowiki()
     process_togo()

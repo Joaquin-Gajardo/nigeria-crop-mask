@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from datetime import date
 
-sys.path.append("..")
+sys.path.append("..") 
 
 from src.exporters import (
     GeoWikiExporter,
@@ -53,7 +53,13 @@ def cancel_tasks():
 
 
 if __name__ == "__main__":
-    export_geowiki_sentinel_ee()
-    export_togo()
+    #export_geowiki()
+    #export_geowiki_sentinel_ee()
+    #export_togo() # --> why is the default only for evaluation set?
     export_region()
-    # cancel_all_tasks()
+        
+    ## Original ##
+    #export_geowiki_sentinel_ee()
+    #export_togo()
+    #export_region()
+    ##cancel_all_tasks()
