@@ -19,7 +19,7 @@ from src.utils import sentinel_as_tci
 def landcover_mapper():
 
     #data_dir = "../data"
-    data_dir = "../data/predictions/Nigeria"
+    data_dir = "../data/predictions/Nigeria2"
 
     #test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/cropland-GEE-data/Togo/tifs/earth_engine_region/Takeout/Drive/earth_engine_region")
     test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/cropland-GEE-data/Nigeria/tifs/raw/gdrive")
@@ -30,12 +30,9 @@ def landcover_mapper():
     model = LandCoverMapper.load_from_checkpoint(model_path)
 
     for test_path in test_files:
-        id = int(test_path.as_posix().split('/')[-1].split('-')[0])
-        if id >= 582: # to carry on after reboot
-            continue 
 
         print(f"Running for {test_path}")
-        out = model.predict(test_path, use_gpu=False) # Issue with GPU when set to True. TODO: Build another enviroment like in kenya-crop-mask
+        out = model.predict(test_path, use_gpu=True) # Issue with GPU when set to True. TODO: Build another enviroment like in kenya-crop-mask
 
         # the date passed is not too important here
         tci = sentinel_as_tci(

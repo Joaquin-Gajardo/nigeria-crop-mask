@@ -250,7 +250,18 @@ class LandCoverMapper(pl.LightningModule):
         nan_fill: float = 0,
         days_per_timestep: int = 30,
         local_head: bool = True,
+        use_gpu: bool= False,
     ) -> xr.Dataset:
+
+        # check if a GPU is available, and if it is
+        # move the model onto the GPU
+        device: Optional[torch.device] = None
+        if use_gpu:
+            use_cuda = torch.cuda.is_available()
+            if not use_cuda:
+                print("No GPU - not using one")
+            device = torch.device("cuda" if use_cuda else "cpu")
+            self.to(device)
 
         self.eval()
 
@@ -273,6 +284,9 @@ class LandCoverMapper(pl.LightningModule):
                 dataset.remove_bands(input_data.x[cur_i : cur_i + batch_size])
             ).float()
 
+            if use_gpu and (device is not None):
+                batch_x = batch_x.to(device)
+
             with torch.no_grad():
                 batch_preds = self.forward(batch_x)
 
@@ -286,6 +300,9 @@ class LandCoverMapper(pl.LightningModule):
 
                 if self.num_outputs > 1:
                     batch_preds = F.softmax(cast(torch.Tensor, batch_preds), dim=-1)
+
+                # back to the CPU, if necessary
+                batch_preds = batch_preds.cpu()
 
             predictions.append(cast(torch.Tensor, batch_preds).numpy())
             cur_i += batch_size

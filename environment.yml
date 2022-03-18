@@ -1,4 +1,4 @@
-name: landcover-mapping
+name: togo-paper # but I created it manually
 channels:
   - conda-forge
   - pytorch
@@ -28,3 +28,4 @@ dependencies:
       - google-auth-httplib2  # google drive
       - google-auth-oauthlib  # google drive
       - gdown  # google drive
+      - rioxarray # newly added to write xarrays to tiff
