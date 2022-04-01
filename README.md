@@ -67,8 +67,8 @@ data
 6. python -c "from export.py import export_togo; export_togo()"
 7. Repeat 6., but manually changing evaluation_set to False in exporter.export_for_labels inside export_togo() 
 8. python -c "from export.py import export_region; export_region()"
-9. python -c "from engineer.py import engineer_geowiki; export_geowiki()"
-10. python -c "from engineer.py import engineer_togo; export_togo()"
+9. python -c "from engineer.py import engineer_geowiki; engineer_geowiki()"
+10. python -c "from engineer.py import engineer_togo; engineer_togo()"
 ```
 
 ## Setup
