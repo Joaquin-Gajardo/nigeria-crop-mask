@@ -48,52 +48,54 @@ class LandTypeClassificationDataset(Dataset):
 
         self.crop_probability_threshold = crop_probability_threshold
 
-        if (subset == "testing") and (
-            self.features_dir / TogoProcessor.evaluation_dataset
-        ).exists():
-            print("Evaluating using the togo evaluation dataset!")
+        # if (subset == "testing") and (
+        #     self.features_dir / TogoProcessor.evaluation_dataset
+        # ).exists():
+        #     print("Evaluating using the togo evaluation dataset!")
+        #     pass #TODO: check this out when I want to test with geowiki only
 
-            assert normalizing_dict is not None
+        #     assert normalizing_dict is not None
+        #     self.normalizing_dict = normalizing_dict
+
+        #     self.pickle_files, _ = self.load_files_and_normalizing_dict(
+        #         self.features_dir / TogoProcessor.evaluation_dataset, subset
+        #     )
+
+        # else:
+        assert (
+            max(include_geowiki, include_togo) is True
+        ), "At least one dataset must be included"
+
+        files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
+
+        if include_geowiki:
+
+            geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
+                self.features_dir / GeoWikiExporter.dataset / 'fully_exclude_nigeria', self.subset_name
+            )
+            print(f'Number of geowiki instances in {self.subset_name} set: {len(geowiki_files)}')
+
+            files_and_dicts.append((geowiki_files, geowiki_nd))
+
+        if include_togo:
+            togo_files, togo_nd = self.load_files_and_normalizing_dict(
+                self.features_dir / TogoProcessor.dataset, self.subset_name,
+            )
+            files_and_dicts.append((togo_files, togo_nd))
+
+        if normalizing_dict is None:
+            # if a normalizing dict wasn't passed to the constructor,
+            # then we want to make our own
+            self.normalizing_dict = self.adjust_normalizing_dict(
+                [(len(x[0]), x[1]) for x in files_and_dicts]
+            )
+        else:
             self.normalizing_dict = normalizing_dict
 
-            self.pickle_files, _ = self.load_files_and_normalizing_dict(
-                self.features_dir / TogoProcessor.evaluation_dataset, subset
-            )
-
-        else:
-            assert (
-                max(include_geowiki, include_togo) is True
-            ), "At least one dataset must be included"
-
-            files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
-
-            if include_geowiki:
-
-                geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
-                    self.features_dir / GeoWikiExporter.dataset, self.subset_name
-                )
-
-                files_and_dicts.append((geowiki_files, geowiki_nd))
-
-            if include_togo:
-                togo_files, togo_nd = self.load_files_and_normalizing_dict(
-                    self.features_dir / TogoProcessor.dataset, self.subset_name,
-                )
-                files_and_dicts.append((togo_files, togo_nd))
-
-            if normalizing_dict is None:
-                # if a normalizing dict wasn't passed to the constructor,
-                # then we want to make our own
-                self.normalizing_dict = self.adjust_normalizing_dict(
-                    [(len(x[0]), x[1]) for x in files_and_dicts]
-                )
-            else:
-                self.normalizing_dict = normalizing_dict
-
-            pickle_files: List[Path] = []
-            for files, _ in files_and_dicts:
-                pickle_files.extend(files)
-            self.pickle_files = pickle_files
+        pickle_files: List[Path] = []
+        for files, _ in files_and_dicts:
+            pickle_files.extend(files)
+        self.pickle_files = pickle_files
 
     @property
     def num_output_classes(self) -> int:
