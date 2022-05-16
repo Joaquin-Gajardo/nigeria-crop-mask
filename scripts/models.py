@@ -21,9 +21,9 @@ if __name__ == "__main__":
     new_model_args_dict['add_togo'] = False
     new_model_args_dict['multi_headed'] = False
     new_model_args_dict['num_classification_layers'] = 1
-    new_model_args_dict['max_epochs'] = 20 # Just for dev
-    new_model_args_dict['accelerator'] = 'gpu' 
-    new_model_args_dict['gpus'] = 0 
+    new_model_args_dict['max_epochs'] = 1000 # Just for dev
+    #new_model_args_dict['accelerator'] = 'gpu'  # only in newer lightning versions
+    new_model_args_dict['gpus'] = 0  # if using more than one I need to pass distributed_backend='dp' or 'dpp'
     new_model_args = Namespace(**new_model_args_dict)
 
     # INITIALIZE MODEL
@@ -32,4 +32,4 @@ if __name__ == "__main__":
 
     last_model, trainer = train_model(model, new_model_args)
 
-    #trainer.test(last_model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
+    trainer.test(last_model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
