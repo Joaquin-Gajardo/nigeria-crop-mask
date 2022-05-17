@@ -33,4 +33,5 @@ if __name__ == "__main__":
 
     last_model, trainer = train_model(model, new_model_args)
 
+    trainer.logger = None # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
     trainer.test(last_model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
