@@ -1,21 +1,14 @@
 name: nigeria-gpu
 channels:
-  - conda-forge
-  - pytorch
+  - defaults
 dependencies:
   - python=3.6  # earthengine doesn't play with python 3.7
   - earthengine-api
-  - mypy
-  - black
-  - pytest
-  - pytest-flake8
   - pandas
   - xarray
-  - netcdf4
   - rasterio
   - jupyter
   - matplotlib
-  - pip
   - pytorch
   - cudatoolkit
   - pyproj
@@ -29,4 +22,6 @@ dependencies:
       - google-auth-httplib2  # google drive
       - google-auth-oauthlib  # google drive
       - gdown  # google drive
+      - earthengine-api
       - rioxarray # newly added to write xarrays to tiff
+      - wandb

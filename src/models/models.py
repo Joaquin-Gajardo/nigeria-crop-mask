@@ -177,14 +177,18 @@ class LandCoverMapper(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     def training_step(self, batch, batch_idx):
-        return self._split_preds_and_get_loss(
+        loss = self._split_preds_and_get_loss(
             batch, add_preds=False, loss_label="loss", log_loss=True
         )
+        self.logger.log_metrics({'train loss': loss})
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        return self._split_preds_and_get_loss(
+        loss = self._split_preds_and_get_loss(
             batch, add_preds=True, loss_label="val_loss", log_loss=False
         )
+        self.logger.log_metrics({'val loss': loss})
+        return loss
 
     def test_step(self, batch, batch_idx):
         return self._split_preds_and_get_loss(
