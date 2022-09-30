@@ -9,6 +9,7 @@ from src.exporters import (
     GeoWikiSentinelExporter,
     RegionalExporter,
     TogoSentinelExporter,
+    NigeriaSentinelExporter,
     GDriveExporter,
     cancel_all_tasks,
 )
@@ -29,6 +30,12 @@ def export_togo():
     exporter = TogoSentinelExporter(Path("../data"))
     exporter.export_for_labels(
         num_labelled_points=None, monitor=False, checkpoint=True, evaluation_set=True
+    )
+
+def export_nigeria():
+    exporter = NigeriaSentinelExporter(Path("../data"))
+    exporter.export_for_labels(
+        num_labelled_points=None, monitor=False, checkpoint=True
     )
 
 
@@ -56,7 +63,8 @@ if __name__ == "__main__":
     #export_geowiki()
     #export_geowiki_sentinel_ee()
     #export_togo() # --> why is the default only for evaluation set?
-    export_region()
+    #export_region()
+    export_nigeria()
         
     ## Original ##
     #export_geowiki_sentinel_ee()
