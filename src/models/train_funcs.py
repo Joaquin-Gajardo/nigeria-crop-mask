@@ -2,10 +2,13 @@ from typing import Tuple
 from argparse import Namespace
 
 import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import EarlyStopping
 
 
 def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.LightningModule, pl.Trainer]:
+    
+    wandb_logger = WandbLogger(project="Nigeria-geowiki-global")
     early_stop_callback = EarlyStopping(
         monitor="val_loss",
         min_delta=0.00,
@@ -18,6 +21,7 @@ def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.Light
         max_epochs=hparams.max_epochs,
         early_stop_callback=early_stop_callback,
         gpus=hparams.gpus,
+        logger=wandb_logger,
     )
     trainer.fit(model)
 
