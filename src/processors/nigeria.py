@@ -6,7 +6,7 @@ from .base import BaseProcessor
 
 class NigeriaProcessor(BaseProcessor):
 
-    dataset = "nigeria_farmlands"
+    dataset = "nigeria_farmlands_v2"
 
     def __init__(self, data_folder: Path) -> None:
         super().__init__(data_folder)

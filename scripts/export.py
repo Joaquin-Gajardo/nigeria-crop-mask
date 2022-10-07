@@ -32,7 +32,8 @@ def export_togo():
         num_labelled_points=None, monitor=False, checkpoint=True, evaluation_set=True
     )
 
-def export_nigeria():
+
+def export_nigeria(): # TODO: fix GEE and gcloud API connection via CLI, currently only working to run this function via jupyter notebook
     exporter = NigeriaSentinelExporter(Path("../data"))
     exporter.export_for_labels(
         num_labelled_points=None, monitor=False, checkpoint=True
@@ -50,9 +51,9 @@ def export_region():
     )
 
 
-def export_gdrive():
-    exporter = GDriveExporter(Path("../data"))
-    exporter.export(region_name="Togo", max_downloads=1)
+def export_gdrive_nigeria():
+    exporter = GDriveExporter(Path("../data"), dataset=NigeriaSentinelExporter.dataset)
+    exporter.export()
 
 
 def cancel_tasks():
@@ -64,7 +65,9 @@ if __name__ == "__main__":
     #export_geowiki_sentinel_ee()
     #export_togo() # --> why is the default only for evaluation set?
     #export_region()
-    export_nigeria()
+
+    #export_nigeria()
+    export_gdrive_nigeria()
         
     ## Original ##
     #export_geowiki_sentinel_ee()

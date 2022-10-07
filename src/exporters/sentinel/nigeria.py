@@ -12,10 +12,10 @@ from typing import Optional, List
 
 class NigeriaSentinelExporter(BaseSentinelExporter):
 
-    dataset = "earth_engine_nigeria"
+    dataset = "earth_engine_nigeria_farmlands_v2"
 
     # Nigeria farmlands data is from 2018 and verification by photointerpretation was done with Google Satellite (from unknown dates...)
-    data_date = date(2018, 3, 28)
+    data_date = date(2019, 3, 28)
 
     def load_labels(self) -> pd.DataFrame:
         nigeria = self.data_folder / "processed" / NigeriaProcessor.dataset / "data.geojson"

@@ -7,6 +7,7 @@ from src.engineer import (
     GeoWikiEngineer,
     TogoEngineer,
     TogoEvaluationEngineer,
+    NigeriaEngineer,
 )
 
 
@@ -23,6 +24,12 @@ def engineer_togo():
     eval_engineer.engineer()
 
 
+def engineer_nigeria():
+    engineer = NigeriaEngineer(Path("../data"))
+    engineer.engineer(val_set_size=1.0, test_set_size=0)
+
+
 if __name__ == "__main__":
-    engineer_geowiki()
+    #engineer_geowiki()
     #engineer_togo()
+    engineer_nigeria()
