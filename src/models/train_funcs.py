@@ -25,4 +25,4 @@ def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.Light
     )
     trainer.fit(model)
 
-    return model, trainer
+    return trainer

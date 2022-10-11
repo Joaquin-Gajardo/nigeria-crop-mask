@@ -31,7 +31,8 @@ if __name__ == "__main__":
     print('New model arguments: ', new_model_args)
     model = STR2MODEL["land_cover"](new_model_args)
 
-    last_model, trainer = train_model(model, new_model_args)
+    trainer = train_model(model, new_model_args) 
 
+    # TEST MODEL
     trainer.logger = None # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
-    trainer.test(last_model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
+    trainer.test(trainer.model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions

@@ -26,7 +26,7 @@ def engineer_togo():
 
 def engineer_nigeria():
     engineer = NigeriaEngineer(Path("../data"))
-    engineer.engineer(val_set_size=1.0, test_set_size=0)
+    engineer.engineer(val_set_size=0.0, test_set_size=1.0, calculate_normalizing_dict=False)
 
 
 if __name__ == "__main__":
