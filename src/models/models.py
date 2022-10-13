@@ -75,10 +75,11 @@ class LandCoverMapper(pl.LightningModule):
         self.num_outputs = dataset.num_output_classes
 
         # we save the normalizing dict because we calculate weighted
-        # normalization values based on the datasets we combine.
+        # normalization values based on the datasets we combine. --> from adjust_normalizing_dict function
         # The number of instances per dataset (and therefore the weights) can
         # vary between the train / test / val sets - this ensures the normalizing
         # dict stays constant between them
+        ###  See NOTE on train_dataloader for explanation ###
         self.normalizing_dict = dataset.normalizing_dict
 
         self.model_base_name = hparams.model_base
@@ -153,11 +154,18 @@ class LandCoverMapper(pl.LightningModule):
         )
 
     def train_dataloader(self):
+        '''
+        NOTE about normalizing dict:
+        No normalizing dict is passed, instead it's read from picle file (where it was previously calculated with all train and val samples while engineernig the features).
+        Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
+        In the init method of this model class we get the training dataset to get some parameters and also calculate this combined normalizing dict and store it on self.normalizing_dict,
+        so it can then be passed to the creation of the validation and test dataloaders as a not None argument.
+        '''  
         return DataLoader(
             self.get_dataset(subset="training"),
             shuffle=True,
-            batch_size=self.hparams.batch_size,
-        )
+            batch_size=self.hparams.batch_size,  
+        )                                           
 
     def val_dataloader(self):
         return DataLoader(

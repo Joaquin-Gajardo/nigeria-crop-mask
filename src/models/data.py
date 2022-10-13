@@ -52,7 +52,7 @@ class LandTypeClassificationDataset(Dataset):
         if (subset == "testing") and (self.features_dir / NigeriaProcessor.dataset / subset).exists(): # If the test set for Nigeria exist it will use it instead of the 
             print("Evaluating using the Nigeria evaluation dataset!")
 
-            assert normalizing_dict is not None # check why I do need a normalizing dict in test set (TogoEvaluation data originally, or any)
+            assert normalizing_dict is not None # we want to normalize our test set with the training and val data statistics 
             self.normalizing_dict = normalizing_dict
 
             self.pickle_files, _ = self.load_files_and_normalizing_dict(
@@ -146,7 +146,7 @@ class LandTypeClassificationDataset(Dataset):
     ) -> Optional[Dict[str, np.ndarray]]:
 
         for length, single_dict in dicts:
-            if single_dict is None:
+            if single_dict is None:  # This means if the first normalizing dict (geowiki or Togo if we don't include geowiki) is missing we won't use any (we return None). #NOTE: beware of behaviour if I had more datasets like not geowiki and only use Nigeria or Togo.
                 return None
 
         dicts = cast(Sequence[Tuple[int, Dict[str, np.ndarray]]], dicts)
