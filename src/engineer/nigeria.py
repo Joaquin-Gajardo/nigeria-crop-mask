@@ -80,6 +80,7 @@ class NigeriaEngineer(BaseEngineer):
 
         if (not is_test) and calculate_normalizing_dict:
             self.update_normalizing_values(labelled_array)
+            self.update_normalizing_values_per_class(labelled_array, is_crop=int(overlap.iloc[0].is_crop))
 
         if labelled_array is not None:
             return NigeriaDataInstance(

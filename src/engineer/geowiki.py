@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
 import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from typing import Optional
+from typing import Optional, List, Union
 
 
 from src.exporters import GeoWikiExporter, GeoWikiSentinelExporter
@@ -29,6 +31,34 @@ class GeoWikiEngineer(BaseEngineer):
         geowiki = data_folder / "processed" / GeoWikiExporter.dataset / "data.nc"
         assert geowiki.exists(), "GeoWiki processor must be run to load labels"
         return xr.open_dataset(geowiki).to_dataframe().dropna().reset_index()
+
+    def get_geospatial_files_per_country(self, data_folder: Path, country: str) -> List[Path]:
+        sentinel_files = data_folder / "raw" / self.sentinel_dataset
+        all_files = list(sentinel_files.glob("*.tif"))
+        
+        # Get only those inside country
+        df = pd.read_csv(self.savedir / 'identifiers_plus_cropland_prob.csv') # NOTE: see notebook 01 to see how this csv file is created
+        geowiki_points = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['lon'], df['lat']), crs=4326)
+
+        world_map = gpd.read_file('../assets/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp')
+        country_shp = world_map[world_map['SOVEREIGNT'] == country].reset_index(drop=True)
+        geowiki_subset_mask = geowiki_points.within(country_shp.loc[0, 'geometry'])
+        geowiki_subset = geowiki_points.loc[geowiki_subset_mask]
+        
+        #Plot
+        # fig, ax = plt.subplots(1,1, figsize=(10,10))
+        # country_shp.plot(ax=ax)
+        # geowiki_subset.plot(ax=ax,color='red')
+
+        ids = geowiki_subset['identifier'].values.tolist()
+        files = []
+        for file_path in all_files:
+            file_info = self.process_filename(file_path.name, True)
+            identifier, _ , _ = file_info
+            if int(identifier) in ids:
+                files.append(file_path)
+        
+        return files
 
     def process_single_file(
         self,
@@ -98,6 +128,7 @@ class GeoWikiEngineer(BaseEngineer):
             # we won't use the neighbouring array for now, since tile2vec is
             # not really working
             self.update_normalizing_values(labelled_array)
+            self.update_normalizing_values_per_class(labelled_array, is_crop=crop_probability>=0.5)
 
         if labelled_array is not None:
             return GeoWikiDataInstance(

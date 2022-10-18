@@ -55,6 +55,7 @@ class BaseEngineer(ABC):
         self.savedir.mkdir(exist_ok=True, parents=True)
 
         self.normalizing_dict_interim: Dict[str, Union[np.ndarray, int]] = {"n": 0}
+        self.normalizing_dict_interim_per_class: Dict[str, Union[np.ndarray, int]] = {"n_crop": 0, "n_noncrop": 0}  # For explorative data analysis purposes
 
     def get_geospatial_files(self, data_folder: Path) -> List[Path]:
         sentinel_files = data_folder / "raw" / self.sentinel_dataset
@@ -362,3 +363,58 @@ class BaseEngineer(ABC):
                     pickle.dump(normalizing_dict, f)
             else:
                 print("No normalizing dict calculated!")
+
+
+    def update_normalizing_values_per_class(self, array: np.ndarray, is_crop: bool) -> None:
+        # given an input array of shape [timesteps, bands]
+        # update the normalizing dict per class
+        # For explorative data analysis purposes
+        num_bands = array.shape[1]
+
+        # initialize
+        if "mean_crop" not in self.normalizing_dict_interim_per_class:
+            self.normalizing_dict_interim_per_class["mean_crop"] = np.zeros(num_bands)
+            self.normalizing_dict_interim_per_class["mean_noncrop"] = np.zeros(num_bands)
+            self.normalizing_dict_interim_per_class["M2_crop"] = np.zeros(num_bands)
+            self.normalizing_dict_interim_per_class["M2_noncrop"] = np.zeros(num_bands)
+
+        suffix = 'crop' if is_crop else 'noncrop'
+        for time_idx in range(array.shape[0]):
+
+            self.normalizing_dict_interim_per_class[f"n_{suffix}"] += 1
+
+            x = array[time_idx, :]
+
+            delta = x - self.normalizing_dict_interim_per_class[f"mean_{suffix}"]
+            self.normalizing_dict_interim_per_class[f"mean_{suffix}"] += (
+                delta / self.normalizing_dict_interim_per_class[f"n_{suffix}"]
+            )
+            self.normalizing_dict_interim_per_class[f"M2_{suffix}"] += delta * (
+                x - self.normalizing_dict_interim_per_class[f"mean_{suffix}"]
+            )
+
+    def calculate_normalizing_dict_per_class(self) -> Optional[Dict[str, np.ndarray]]:
+
+        if "mean_crop" not in self.normalizing_dict_interim_per_class:
+            print(
+                "No per-class normalizing dict calculated! Make sure to call update_normalizing_values_per_class"
+            )
+            return None
+
+        variance = self.normalizing_dict_interim_per_class["M2_crop"] / (
+            self.normalizing_dict_interim_per_class["n_crop"] - 1
+        )
+        std_crop = np.sqrt(variance)
+        
+        variance = self.normalizing_dict_interim_per_class["M2_noncrop"] / (
+            self.normalizing_dict_interim_per_class["n_noncrop"] - 1
+        )
+        std_noncrop = np.sqrt(variance)
+
+        return {
+            "mean_crop": self.normalizing_dict_interim_per_class["mean_crop"],
+            "mean_noncrop": self.normalizing_dict_interim_per_class["mean_noncrop"],
+            "std_crop": std_crop, 
+            "std_noncrop": std_noncrop, 
+            }
+
