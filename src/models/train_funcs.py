@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 from argparse import Namespace
 
@@ -7,8 +8,8 @@ from pytorch_lightning.callbacks import EarlyStopping
 
 
 def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.LightningModule, pl.Trainer]:
-    
-    wandb_logger = WandbLogger(project="Nigeria-geowiki-global")
+
+    wandb_logger = WandbLogger(project="Nigeria-geowiki-global") if hparams.wandb else True
     early_stop_callback = EarlyStopping(
         monitor="val_loss",
         min_delta=0.00,

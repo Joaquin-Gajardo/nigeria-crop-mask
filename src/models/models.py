@@ -71,6 +71,8 @@ class LandCoverMapper(pl.LightningModule):
         self.data_folder = Path(hparams.data_folder)
 
         dataset = self.get_dataset(subset="training")
+        if self.hparams.weighted_loss_fn:
+            self.training_class_weights = self.get_class_weights(dataset)
         self.input_size = dataset.num_input_features
         self.num_outputs = dataset.num_output_classes
 
@@ -121,6 +123,15 @@ class LandCoverMapper(pl.LightningModule):
             self.local_classifier = nn.Sequential(*local_classification_layers)
 
         self.loss_function: Callable = F.binary_cross_entropy
+
+    def get_class_weights(self, dataset):
+        labels = []
+        for _, label, _ in dataset:
+            labels.append(label.reshape(1))
+        labels = torch.cat(labels)
+        class_dist = torch.bincount(labels.to(torch.int))
+        class_weights = class_dist.sum() / class_dist
+        return class_weights
 
     def forward(
         self, x: torch.Tensor
@@ -188,20 +199,22 @@ class LandCoverMapper(pl.LightningModule):
         loss = self._split_preds_and_get_loss(
             batch, add_preds=False, loss_label="loss", log_loss=True
         )
-        self.logger.log_metrics({'train loss': loss})
+        self.logger.log_metrics({'train loss': loss["loss"]})
         return loss
 
     def validation_step(self, batch, batch_idx):
         loss = self._split_preds_and_get_loss(
             batch, add_preds=True, loss_label="val_loss", log_loss=False
         )
-        self.logger.log_metrics({'val loss': loss})
+        self.logger.log_metrics({'val loss': loss["val_loss"]})
         return loss
 
     def test_step(self, batch, batch_idx):
-        return self._split_preds_and_get_loss(
+        loss =  self._split_preds_and_get_loss(
             batch, add_preds=True, loss_label="test_loss", log_loss=False
         )
+        self.logger.log_metrics({'test loss': loss["test_loss"]})
+        return loss
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
@@ -422,9 +435,15 @@ class LandCoverMapper(pl.LightningModule):
         else:
             preds = self.forward(x)
 
-            loss = self.loss_function(
-                input=cast(torch.Tensor, preds).squeeze(-1), target=label,
-            )
+            if not self.hparams.weighted_loss_fn:
+                loss = self.loss_function(
+                    input=cast(torch.Tensor, preds).squeeze(-1), target=label,
+                )
+            else:
+                batch_weights = torch.ones(label.size(0)) #TODO: add to device when using GPU
+                for i in [0, 1]:
+                    batch_weights = torch.where(label == float(i), self.training_class_weights[i].to(torch.float32), batch_weights)
+                loss = (batch_weights * self.loss_function(input=cast(torch.Tensor, preds).squeeze(-1), target=label, reduction='none')).mean()
 
             if add_preds:
                 preds_dict.update({"pred": preds, "label": label})
