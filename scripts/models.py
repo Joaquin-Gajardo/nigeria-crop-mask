@@ -13,6 +13,8 @@ if __name__ == "__main__":
     parser.add_argument("--max_epochs", type=int, default=1000)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--gpus", type=int, default=0)
+    parser.add_argument("--wandb", default=False, action="store_true")
+    parser.add_argument("--weighted_loss_fn", default=False, action="store_true")
 
     model_args = STR2MODEL["land_cover"].add_model_specific_args(parser).parse_args()
     print('Default model arguments: ', model_args)
@@ -34,5 +36,6 @@ if __name__ == "__main__":
     trainer = train_model(model, new_model_args) 
 
     # TEST MODEL
-    trainer.logger = None # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
-    trainer.test(trainer.model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
+    #trainer.logger = None # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
+    #trainer.test(trainer.model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
+    trainer.test()
