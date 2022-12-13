@@ -14,5 +14,8 @@ if __name__ == "__main__":
 
     model_args = STR2MODEL["land_cover"].add_model_specific_args(parser).parse_args()
     model = STR2MODEL["land_cover"](model_args)
+    print(model_args)
 
-    train_model(model, model_args)
+    trainer = train_model(model, model_args)
+
+    trainer.test()
