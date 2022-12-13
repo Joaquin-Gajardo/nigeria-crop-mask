@@ -19,4 +19,4 @@ def train_model(model: pl.LightningModule, hparams: Namespace) -> pl.LightningMo
     )
     trainer.fit(model)
 
-    return model
+    return trainer
