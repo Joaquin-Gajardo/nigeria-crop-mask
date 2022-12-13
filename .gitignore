@@ -190,3 +190,4 @@ data
 figures
 scripts/lightning_logs
 scripts/wandb
+TODOS.txt

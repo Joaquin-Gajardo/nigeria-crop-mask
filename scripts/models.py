@@ -1,11 +1,13 @@
 import torch
 import sys
+import os
 from argparse import ArgumentParser, Namespace
 
 sys.path.append("..")
 
 from src.models import STR2MODEL, train_model
 
+#os.environ["WANDB_DISABLE_SERVICE"]="True"
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -36,6 +38,6 @@ if __name__ == "__main__":
     trainer = train_model(model, new_model_args) 
 
     # TEST MODEL
-    #trainer.logger = None # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
+    #trainer.logger = True # TODO: fix and remove. For some reason (seems to be th update in the config file) trainer.test doesn't like to log 
     #trainer.test(trainer.model) # can also pass a checkpoint to trainer.test or "best" in newer Lightnight versions
     trainer.test()

@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import EarlyStopping
 
+#os.environ["WANDB_DISABLE_SERVICE"]="True"
 
 def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.LightningModule, pl.Trainer]:
 

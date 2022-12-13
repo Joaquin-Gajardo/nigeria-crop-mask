@@ -16,6 +16,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
+    confusion_matrix,
 )
 
 from src.utils import set_seed
@@ -213,7 +214,7 @@ class LandCoverMapper(pl.LightningModule):
         loss =  self._split_preds_and_get_loss(
             batch, add_preds=True, loss_label="test_loss", log_loss=False
         )
-        self.logger.log_metrics({'test loss': loss["test_loss"]})
+        #self.logger.log_metrics({'test loss': loss["test_loss"]})
         return loss
 
     def validation_epoch_end(self, outputs):
@@ -388,7 +389,7 @@ class LandCoverMapper(pl.LightningModule):
         output_dict[f"{prefix}recall_score"] = recall_score(labels, preds)
         output_dict[f"{prefix}f1_score"] = f1_score(labels, preds)
         output_dict[f"{prefix}accuracy"] = accuracy_score(labels, preds)
-
+        print('confusion matrix:', confusion_matrix(labels, preds))
         return output_dict
 
     def _split_preds_and_get_loss(
