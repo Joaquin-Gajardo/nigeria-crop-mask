@@ -72,8 +72,13 @@ class LandCoverMapper(pl.LightningModule):
         self.data_folder = Path(hparams.data_folder)
 
         dataset = self.get_dataset(subset="training")
+
         if self.hparams.weighted_loss_fn:
-            self.training_class_weights = self.get_class_weights(dataset)
+            val_dataset = self.get_dataset(subset="validation")
+            self.global_class_weights, self.local_class_weights = self.get_class_weights([dataset, val_dataset])
+            print('Global class weights:', self.global_class_weights)
+            print('Local class weights:', self.local_class_weights)
+       
         self.input_size = dataset.num_input_features
         self.num_outputs = dataset.num_output_classes
 
@@ -125,14 +130,33 @@ class LandCoverMapper(pl.LightningModule):
 
         self.loss_function: Callable = F.binary_cross_entropy
 
-    def get_class_weights(self, dataset):
-        labels = []
-        for _, label, _ in dataset:
-            labels.append(label.reshape(1))
-        labels = torch.cat(labels)
-        class_dist = torch.bincount(labels.to(torch.int))
-        class_weights = class_dist.sum() / class_dist
-        return class_weights
+    def get_class_weights(self, datasets):
+        global_labels = []
+        local_labels = []
+        for dataset in datasets:
+            for _, label, weight in dataset:
+                # If we have only one head (not multiheaded) everything should
+                # be a global label because eveything goes to the global head
+                if not self.hparams.multi_headed or weight.item() == 0: 
+                    global_labels.append(label.reshape(1))
+                else:
+                    local_labels.append(label.reshape(1))
+
+        print('Number of global labels:', len(global_labels))
+        print('Number of local labels:', len(local_labels))
+
+        global_labels = torch.cat(global_labels)
+        global_class_dist = torch.bincount(global_labels.to(torch.int))
+        global_class_weights = global_class_dist.sum() / global_class_dist#.to(torch.float32) # to float so that result is not cast to int
+
+        local_class_weights = None
+        if self.hparams.multi_headed:
+            assert len(local_labels) != 0, 'If multiheaded all labels should be global so they are use in the global head'
+            local_labels = torch.cat(local_labels)
+            local_class_dist = torch.bincount(local_labels.to(torch.int))
+            local_class_weights = local_class_dist.sum() / local_class_dist#.to(torch.float32) # to float so that result is not cast to int
+
+        return global_class_weights, local_class_weights
 
     def forward(
         self, x: torch.Tensor
@@ -409,13 +433,18 @@ class LandCoverMapper(pl.LightningModule):
 
             loss = 0
             if local_preds.shape[0] > 0:
-                local_loss = self.loss_function(local_preds.squeeze(-1), local_labels)
+                if not self.hparams.weighted_loss_fn:
+                    local_loss = self.loss_function(local_preds.squeeze(-1), local_labels)
+                else:
+                    local_loss = self.weighted_loss_function(local_preds, local_labels, self.local_class_weights) 
                 loss += local_loss
 
             if global_preds.shape[0] > 0:
-                global_loss = self.loss_function(
-                    global_preds.squeeze(-1), global_labels
-                )
+                if not self.hparams.weighted_loss_fn:
+                    global_loss = self.loss_function(global_preds.squeeze(-1), global_labels)
+                else:
+                    global_loss = self.weighted_loss_function(global_preds, global_labels, self.global_class_weights) 
+
                 num_local_labels = local_preds.shape[0]
                 if num_local_labels == 0:
                     alpha = 1
@@ -434,17 +463,13 @@ class LandCoverMapper(pl.LightningModule):
                     }
                 )
         else:
+            # "is_togo" (weights) will be ignored
             preds = self.forward(x)
 
             if not self.hparams.weighted_loss_fn:
-                loss = self.loss_function(
-                    input=cast(torch.Tensor, preds).squeeze(-1), target=label,
-                )
+                loss = self.loss_function(input=cast(torch.Tensor, preds).squeeze(-1), target=label)
             else:
-                batch_weights = torch.ones(label.size(0)) #TODO: add to device when using GPU
-                for i in [0, 1]:
-                    batch_weights = torch.where(label == float(i), self.training_class_weights[i].to(torch.float32), batch_weights)
-                loss = (batch_weights * self.loss_function(input=cast(torch.Tensor, preds).squeeze(-1), target=label, reduction='none')).mean()
+                loss = self.weighted_loss_function(preds, label, self.global_class_weights) # if not multiheaded there are only global class weights
 
             if add_preds:
                 preds_dict.update({"pred": preds, "label": label})
@@ -454,6 +479,14 @@ class LandCoverMapper(pl.LightningModule):
             output_dict["log"] = {loss_label: loss}
         output_dict.update(preds_dict)
         return output_dict
+
+    def weighted_loss_function(self, preds: torch.Tensor, labels: torch.Tensor, class_weights: torch.Tensor) -> torch.Tensor:
+        assert class_weights.shape[0] == 2, 'Labels are supossed to be binary so class weights should have two elements.'
+        batch_weights = torch.ones(labels.size(0)) #TODO: add to device when using GPU
+        for i in [0, 1]:
+            batch_weights = torch.where(labels == float(i), class_weights[i].to(torch.float32), batch_weights)
+        loss = (batch_weights * self.loss_function(input=cast(torch.Tensor, preds).squeeze(-1), target=labels, reduction='none')).mean()
+        return loss
 
     @staticmethod
     def add_model_specific_args(parent_parser: ArgumentParser) -> ArgumentParser:
