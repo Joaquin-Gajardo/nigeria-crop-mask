@@ -21,7 +21,7 @@ from sklearn.metrics import (
 
 from src.utils import set_seed
 from .model_bases import STR2BASE
-from .data import LandTypeClassificationDataset
+from .data import LandTypeClassificationDataset, GeowikiDataset
 from .utils import tif_to_np, preds_to_xr
 
 from typing import cast, Callable, Tuple, Dict, Any, Type, Optional, List, Union
@@ -61,24 +61,31 @@ class LandCoverMapper(pl.LightningModule):
     :param hparams.multi_headed: Whether or not to add a local head, to classify instances within
         Togo. If False, the same classification layer will be used to classify
         all pixels. Default = True
+    :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
+    :param hparams.countries_subset: List of countries to use from geowiki. Default = None
     """
 
     def __init__(self, hparams: Namespace) -> None:
         super().__init__()
 
-        set_seed()
+        set_seed() # NOTE: will probably have to unset if I want to do several runs
         self.hparams = hparams
-
+        
+        # Dataset
         self.data_folder = Path(hparams.data_folder)
+        countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
+        #countries_subset = None
 
-        dataset = self.get_dataset(subset="training")
+        #dataset = self.get_dataset(subset="training")
+        # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
+        dataset = GeowikiDataset(
+            data_folder=self.data_folder,
+            countries_subset=countries_subset,
+            countries_to_weight=['Nigeria'],
+            remove_b1_b10=self.hparams.remove_b1_b10,
+            crop_probability_threshold=self.hparams.probability_threshold,
+        )
 
-        if self.hparams.weighted_loss_fn:
-            val_dataset = self.get_dataset(subset="validation")
-            self.global_class_weights, self.local_class_weights = self.get_class_weights([dataset, val_dataset])
-            print('Global class weights:', self.global_class_weights)
-            print('Local class weights:', self.local_class_weights)
-       
         self.input_size = dataset.num_input_features
         self.num_outputs = dataset.num_output_classes
 
@@ -87,9 +94,17 @@ class LandCoverMapper(pl.LightningModule):
         # The number of instances per dataset (and therefore the weights) can
         # vary between the train / test / val sets - this ensures the normalizing
         # dict stays constant between them
-        ###  See NOTE on train_dataloader for explanation ###
+        ###  See NOTE on test_dataloader for explanation ###
         self.normalizing_dict = dataset.normalizing_dict
 
+        self.train_dataset, self.val_dataset = dataset.train_val_split(dataset)
+
+        if self.hparams.weighted_loss_fn:
+            self.global_class_weights, self.local_class_weights = self.get_class_weights()
+            print('Global class weights:', self.global_class_weights)
+            print('Local class weights:', self.local_class_weights)
+
+        # Model layers       
         self.model_base_name = hparams.model_base
 
         self.base = STR2BASE[hparams.model_base](
@@ -130,10 +145,16 @@ class LandCoverMapper(pl.LightningModule):
 
         self.loss_function: Callable = F.binary_cross_entropy
 
-    def get_class_weights(self, datasets):
+        print('Number of model parameters:', self.num_trainable_parameters)
+
+    @property
+    def num_trainable_parameters(self): 
+        return sum(param.numel() for param in self.parameters() if param.requires_grad_)
+
+    def get_class_weights(self):
         global_labels = []
         local_labels = []
-        for dataset in datasets:
+        for dataset in [self.train_dataset, self.val_dataset]:
             for _, label, weight in dataset:
                 # If we have only one head (not multiheaded) everything should
                 # be a global label because eveything goes to the global head
@@ -190,28 +211,24 @@ class LandCoverMapper(pl.LightningModule):
         )
 
     def train_dataloader(self):
-        '''
-        NOTE about normalizing dict:
-        No normalizing dict is passed, instead it's read from picle file (where it was previously calculated with all train and val samples while engineernig the features).
-        Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
-        In the init method of this model class we get the training dataset to get some parameters and also calculate this combined normalizing dict and store it on self.normalizing_dict,
-        so it can then be passed to the creation of the validation and test dataloaders as a not None argument.
-        '''  
         return DataLoader(
-            self.get_dataset(subset="training"),
+            self.train_dataset,
             shuffle=True,
             batch_size=self.hparams.batch_size,  
         )                                           
 
     def val_dataloader(self):
         return DataLoader(
-            self.get_dataset(
-                subset="validation", normalizing_dict=self.normalizing_dict
-            ),
+            self.val_dataset,
             batch_size=self.hparams.batch_size,
         )
 
     def test_dataloader(self):
+        '''
+        NOTE about normalizing dict:
+        Same normalizing dict as in train and val dataset is passed. It's calculated from all train and val samples used.
+        Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
+        '''  
         return DataLoader(
             self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict),
             batch_size=self.hparams.batch_size,
