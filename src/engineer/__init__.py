@@ -1,6 +1,6 @@
 from .geowiki import GeoWikiEngineer
 from .togo import TogoEngineer, TogoEvaluationEngineer
-from .nigeria import NigeriaEngineer
+from .nigeria import NigeriaEngineer, NigeriaEngineerNew
 
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     "TogoEngineer",
     "TogoEvaluationEngineer",
     "NigeriaEngineer",
+    "NigeriaEngineerNew",
 ]
