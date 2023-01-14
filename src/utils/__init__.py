@@ -4,9 +4,10 @@ import random
 
 from .visualize import sentinel_as_tci, plot_roc_curve, plot_with_mask
 from .regions import STR2BB
+from .samplers import BoundedUniformSampler, BufferedResampler
 
 
-__all__ = ["sentinel_as_tci", "set_seed", "STR2BB", "plot_roc_curve", "plot_with_mask"]
+__all__ = ["sentinel_as_tci", "set_seed", "STR2BB", "plot_roc_curve", "plot_with_mask", "BoundedUniformSampler", "BufferedResampler"]
 
 
 def set_seed(seed: int = 42) -> None:

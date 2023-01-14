@@ -191,3 +191,4 @@ figures
 scripts/lightning_logs
 scripts/wandb
 TODOS.txt
+data_split_test
