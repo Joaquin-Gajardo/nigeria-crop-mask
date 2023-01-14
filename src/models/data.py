@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 
 from src.exporters import GeoWikiExporter
 from src.exporters.sentinel.cloudfree import BANDS
-from src.processors import TogoProcessor, NigeriaProcessor
+from src.processors import TogoProcessor, NigeriaProcessor, NigeriaProcessorNew
 from src.utils import STR2BB
 from src.engineer.geowiki import GeoWikiDataInstance, GeoWikiEngineer
 from src.engineer.togo import TogoDataInstance
@@ -38,6 +38,7 @@ class LandTypeClassificationDataset(Dataset):
         crop_probability_threshold: Optional[float],
         include_geowiki: bool,
         include_togo: bool,
+        include_nigeria: bool,
         remove_b1_b10: bool,
         normalizing_dict: Optional[Dict] = None,
     ) -> None:
@@ -53,53 +54,60 @@ class LandTypeClassificationDataset(Dataset):
 
         self.crop_probability_threshold = crop_probability_threshold
 
-        if (subset == "testing") and (self.features_dir / NigeriaProcessor.dataset / subset).exists(): # If the test set for Nigeria exist it will use it instead of the 
-            print("Evaluating using the Nigeria evaluation dataset!")
+        # if (subset == "testing") and (self.features_dir / NigeriaProcessor.dataset / subset).exists(): # If the test set for Nigeria exist it will use it instead of the 
+        #     print("Evaluating using the Nigeria evaluation dataset!")
 
-            assert normalizing_dict is not None # we want to normalize our test set with the training and val data statistics 
+        #     assert normalizing_dict is not None # we want to normalize our test set with the training and val data statistics 
+        #     self.normalizing_dict = normalizing_dict
+
+        #     self.pickle_files, _ = self.load_files_and_normalizing_dict(
+        #         self.features_dir / NigeriaProcessor.dataset, subset
+        #     )
+        #     print(f'Number of instances in {NigeriaProcessor.dataset} test set: {len(self.pickle_files)}')
+        #     print(self.normalizing_dict)
+
+        # else:
+        assert (
+            max(include_geowiki, include_togo, include_nigeria) is True
+        ), "At least one dataset must be included"
+
+        files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
+
+        if include_geowiki:
+
+            geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
+                self.features_dir / GeoWikiExporter.dataset , self.subset_name
+            )
+            print(f'Number of geowiki instances in {self.subset_name} set: {len(geowiki_files)}')
+
+            files_and_dicts.append((geowiki_files, geowiki_nd))
+
+        if include_togo:
+            togo_files, togo_nd = self.load_files_and_normalizing_dict(
+                self.features_dir / TogoProcessor.dataset, self.subset_name,
+            )
+            files_and_dicts.append((togo_files, togo_nd))
+            
+        if include_nigeria:
+            nigeria_files, nigeria_nd = self.load_files_and_normalizing_dict(
+                self.features_dir / NigeriaProcessorNew.dataset, self.subset_name,
+            )
+            files_and_dicts.append((nigeria_files, nigeria_nd))
+
+        if normalizing_dict is None:
+            # if a normalizing dict wasn't passed to the constructor,
+            # then we want to make our own
+            self.normalizing_dict = self.adjust_normalizing_dict(
+                [(len(x[0]), x[1]) for x in files_and_dicts]
+            )
+        else:
             self.normalizing_dict = normalizing_dict
 
-            self.pickle_files, _ = self.load_files_and_normalizing_dict(
-                self.features_dir / NigeriaProcessor.dataset, subset
-            )
-            print(f'Number of instances in {NigeriaProcessor.dataset} test set: {len(self.pickle_files)}')
-            print(self.normalizing_dict)
-
-        else:
-            assert (
-                max(include_geowiki, include_togo) is True
-            ), "At least one dataset must be included"
-
-            files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
-
-            if include_geowiki:
-
-                geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
-                    self.features_dir / GeoWikiExporter.dataset / 'fully_exclude_nigeria', self.subset_name
-                )
-                print(f'Number of geowiki instances in {self.subset_name} set: {len(geowiki_files)}')
-
-                files_and_dicts.append((geowiki_files, geowiki_nd))
-
-            if include_togo:
-                togo_files, togo_nd = self.load_files_and_normalizing_dict(
-                    self.features_dir / TogoProcessor.dataset, self.subset_name,
-                )
-                files_and_dicts.append((togo_files, togo_nd))
-
-            if normalizing_dict is None:
-                # if a normalizing dict wasn't passed to the constructor,
-                # then we want to make our own
-                self.normalizing_dict = self.adjust_normalizing_dict(
-                    [(len(x[0]), x[1]) for x in files_and_dicts]
-                )
-            else:
-                self.normalizing_dict = normalizing_dict
-
-            pickle_files: List[Path] = []
-            for files, _ in files_and_dicts:
-                pickle_files.extend(files)
-            self.pickle_files = pickle_files
+        pickle_files: List[Path] = []
+        for files, _ in files_and_dicts:
+            pickle_files.extend(files)
+        self.pickle_files = pickle_files
+        print(f"{len(self.pickle_files)} files in {subset}")
 
     @property
     def num_output_classes(self) -> int:
@@ -134,7 +142,7 @@ class LandTypeClassificationDataset(Dataset):
             )
 
         weight = 0
-        if target_datainstance.isin(STR2BB["Togo"]):
+        if target_datainstance.isin(STR2BB["Nigeria"]):
             weight = 1
 
         return (

@@ -73,18 +73,18 @@ class LandCoverMapper(pl.LightningModule):
         
         # Dataset
         self.data_folder = Path(hparams.data_folder)
-        countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
+        #countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
         #countries_subset = None
 
-        #dataset = self.get_dataset(subset="training")
-        # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
-        dataset = GeowikiDataset(
-            data_folder=self.data_folder,
-            countries_subset=countries_subset,
-            countries_to_weight=['Nigeria'],
-            remove_b1_b10=self.hparams.remove_b1_b10,
-            crop_probability_threshold=self.hparams.probability_threshold,
-        )
+        dataset = self.get_dataset(subset="training")
+        # # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
+        # dataset = GeowikiDataset(
+        #     data_folder=self.data_folder,
+        #     countries_subset=countries_subset,
+        #     countries_to_weight=['Nigeria'],
+        #     remove_b1_b10=self.hparams.remove_b1_b10,
+        #     crop_probability_threshold=self.hparams.probability_threshold,
+        # )
 
         self.input_size = dataset.num_input_features
         self.num_outputs = dataset.num_output_classes
@@ -97,10 +97,11 @@ class LandCoverMapper(pl.LightningModule):
         ###  See NOTE on test_dataloader for explanation ###
         self.normalizing_dict = dataset.normalizing_dict
 
-        self.train_dataset, self.val_dataset = dataset.train_val_split(dataset)
+        #self.train_dataset, self.val_dataset = dataset.train_val_split(dataset)
 
         if self.hparams.weighted_loss_fn:
-            self.global_class_weights, self.local_class_weights = self.get_class_weights()
+            val_dataset = self.get_dataset(subset="validation")
+            self.global_class_weights, self.local_class_weights = self.get_class_weights([dataset, val_dataset])
             print('Global class weights:', self.global_class_weights)
             print('Local class weights:', self.local_class_weights)
 
@@ -151,10 +152,10 @@ class LandCoverMapper(pl.LightningModule):
     def num_trainable_parameters(self): 
         return sum(param.numel() for param in self.parameters() if param.requires_grad_)
 
-    def get_class_weights(self):
+    def get_class_weights(self, datasets: List):
         global_labels = []
         local_labels = []
-        for dataset in [self.train_dataset, self.val_dataset]:
+        for dataset in datasets:
             for _, label, weight in dataset:
                 # If we have only one head (not multiheaded) everything should
                 # be a global label because eveything goes to the global head
@@ -206,20 +207,21 @@ class LandCoverMapper(pl.LightningModule):
             crop_probability_threshold=self.hparams.probability_threshold,
             include_geowiki=self.hparams.add_geowiki,
             include_togo=self.hparams.add_togo,
+            include_nigeria=self.hparams.add_nigeria,
             normalizing_dict=normalizing_dict,
             remove_b1_b10=self.hparams.remove_b1_b10,
         )
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset,
+            self.get_dataset(subset="training"),
             shuffle=True,
             batch_size=self.hparams.batch_size,  
         )                                           
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_dataset,
+            self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict),
             batch_size=self.hparams.batch_size,
         )
 
@@ -230,7 +232,7 @@ class LandCoverMapper(pl.LightningModule):
         Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
         '''  
         return DataLoader(
-            self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict),
+            self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict),
             batch_size=self.hparams.batch_size,
         )
 
