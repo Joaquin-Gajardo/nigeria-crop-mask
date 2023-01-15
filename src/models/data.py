@@ -20,6 +20,7 @@ from src.engineer.nigeria import NigeriaDataInstance
 
 from typing import cast, Tuple, Optional, List, Dict, Sequence, Union, Type, TypeVar
 
+GeowikiDatasetType = TypeVar('GeowikiDatasetType', bound='Parent') # for typing
 
 class LandTypeClassificationDataset(Dataset):
     r"""
@@ -44,6 +45,7 @@ class LandTypeClassificationDataset(Dataset):
         normalizing_dict: Optional[Dict] = None,
         evaluating: bool = False,
         include_nigeria_farmlands: bool = False,
+        geowiki_set: Optional[GeowikiDatasetType] = None,
     ) -> None:
 
         self.normalizing_dict: Optional[Dict] = None
@@ -81,11 +83,14 @@ class LandTypeClassificationDataset(Dataset):
             ### Grab files and normalizing dicts from each dataset ###
             if include_geowiki:
 
-                geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
-                    self.features_dir / GeoWikiExporter.dataset , self.subset_name
-                )
+                # geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
+                #     self.features_dir / GeoWikiExporter.dataset , self.subset_name
+                # )
+                geowiki_files = geowiki_set.pickle_files
+                geowiki_nd = geowiki_set.normalizing_dict
+
                 files_and_dicts.append((geowiki_files, geowiki_nd))
-                print(f'{subset} set -> number of instances of {GeoWikiExporter.dataset}: {len(geowiki_files)}')
+                print(f'{subset} set -> number of instances of {geowiki_set.dataset_name}: {len(geowiki_files)}')
 
             if include_togo:
                 togo_files, togo_nd = self.load_files_and_normalizing_dict(
@@ -122,7 +127,7 @@ class LandTypeClassificationDataset(Dataset):
             for files, _ in files_and_dicts:
                 pickle_files.extend(files)
             self.pickle_files = pickle_files
-            print(f"{len(self.pickle_files)} files in total used for {subset}")
+            print(f"Total number of files used for {subset}: {len(self.pickle_files)}")
 
     @property
     def num_output_classes(self) -> int:
@@ -262,8 +267,6 @@ class LandTypeClassificationDataset(Dataset):
         return len(self.pickle_files)
 
 
-GeowikiDatasetType = TypeVar('GeowikiDatasetType', bound='Parent') # for typing
-
 class GeowikiDataset(Dataset):
     
     dataset_name: str = GeoWikiEngineer.dataset
@@ -295,7 +298,7 @@ class GeowikiDataset(Dataset):
                 self.labels = self.labels[self.labels['country'].str.lower().isin(list(map(str.lower, self.countries_subset)))].reset_index(drop=True)
         else:
             self.labels = labels
-        self.pickle_files = self.get_pickle_files_paths(self.dataset_dir / 'all')
+        self.pickle_files = self.get_pickle_files_paths(self.dataset_dir / 'all') # NOTE: if all subfolder doesn't exist simply copy all files from training and validation folders inside (TODO)
         self.file_identifiers_countries_to_weight = self.get_file_ids_for_countries(self.countries_to_weight)
         print('length labels:', len(self.labels))
         print('length pickle files:', len(self.pickle_files))
@@ -404,13 +407,12 @@ class GeowikiDataset(Dataset):
         Searches for the normalizing dict file in the self.data_dir directory and returns its path. Returns None if it was not found.
         '''
         prefix = default_file_name.split('.')[0]
-        
         if not self.countries_subset:
             file_path = self.dataset_dir / default_file_name
             if file_path.exists():
                 print(f'Found normalizing dict {file_path.name}')
                 return file_path
-        elif len(self.countries_subset) == 1 and self.countries[0].lower() == 'africa':
+        elif len(self.countries_subset) == 1 and self.countries_subset[0].lower() == 'africa':
             raise NotImplementedError # TODO
 
         else:

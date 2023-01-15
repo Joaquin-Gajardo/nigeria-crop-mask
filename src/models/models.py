@@ -73,18 +73,25 @@ class LandCoverMapper(pl.LightningModule):
         
         # Dataset
         self.data_folder = Path(hparams.data_folder)
-        #countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
-        #countries_subset = None
+
+        if self.hparams.add_geowiki:
+            # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
+            countries_subset = None
+            #countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
+            #countries_subset = ['Nigeria']
+            geowiki_dataset = GeowikiDataset(
+                data_folder=self.data_folder,
+                countries_subset=countries_subset,
+                countries_to_weight=['Nigeria'],
+                remove_b1_b10=self.hparams.remove_b1_b10,
+                crop_probability_threshold=self.hparams.probability_threshold,
+            )
+
+            geowiki_dataset_splits = geowiki_dataset.train_val_split(geowiki_dataset)
+            self.geowiki_train_dataset = geowiki_dataset_splits[0]
+            self.geowiki_val_dataset = geowiki_dataset_splits[1]
 
         dataset = self.get_dataset(subset="training")
-        # # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
-        # dataset = GeowikiDataset(
-        #     data_folder=self.data_folder,
-        #     countries_subset=countries_subset,
-        #     countries_to_weight=['Nigeria'],
-        #     remove_b1_b10=self.hparams.remove_b1_b10,
-        #     crop_probability_threshold=self.hparams.probability_threshold,
-        # )
 
         self.input_size = dataset.num_input_features
         self.num_outputs = dataset.num_output_classes
@@ -95,9 +102,7 @@ class LandCoverMapper(pl.LightningModule):
         # vary between the train / test / val sets - this ensures the normalizing
         # dict stays constant between them
         ###  See NOTE on test_dataloader for explanation ###
-        self.normalizing_dict = dataset.normalizing_dict
-
-        #self.train_dataset, self.val_dataset = dataset.train_val_split(dataset)
+        self.normalizing_dict = dataset.normalizing_dict # -> we'll use it for test set
 
         if self.hparams.weighted_loss_fn:
             val_dataset = self.get_dataset(subset="validation")
@@ -166,11 +171,16 @@ class LandCoverMapper(pl.LightningModule):
 
         print('Number of global labels:', len(global_labels))
         print('Number of local labels:', len(local_labels))
+        
+        # For case of multiheaded without any weighted sample, this should never happen in practice though
+        # as it doesn't make sense to use multiheaded if if not using data out of the target country
+        global_class_weights = None 
+        if len(global_labels) != 0: 
+            global_labels = torch.cat(global_labels)
+            global_class_dist = torch.bincount(global_labels.to(torch.int))
+            global_class_weights = global_class_dist.sum() / global_class_dist#.to(torch.float32) # to float so that result is not cast to int
 
-        global_labels = torch.cat(global_labels)
-        global_class_dist = torch.bincount(global_labels.to(torch.int))
-        global_class_weights = global_class_dist.sum() / global_class_dist#.to(torch.float32) # to float so that result is not cast to int
-
+        # To handle opposite case of multiheaded without any local labels found
         local_class_weights = None
         if self.hparams.multi_headed:
             assert len(local_labels) != 0, 'If multiheaded all labels should be global so they are use in the global head'
@@ -201,6 +211,13 @@ class LandCoverMapper(pl.LightningModule):
     def get_dataset(
         self, subset: str, normalizing_dict: Optional[Dict] = None, evaluating: bool = False
     ) -> LandTypeClassificationDataset:
+        geowiki_set = None
+        if self.hparams.add_geowiki:
+            if subset == 'training':
+                geowiki_set = self.geowiki_train_dataset
+            elif subset == 'validation':
+                geowiki_set = self.geowiki_val_dataset
+
         return LandTypeClassificationDataset(
             data_folder=self.data_folder,
             subset=subset,
@@ -210,7 +227,8 @@ class LandCoverMapper(pl.LightningModule):
             include_nigeria=self.hparams.add_nigeria,
             normalizing_dict=normalizing_dict,
             remove_b1_b10=self.hparams.remove_b1_b10,
-            evaluating=evaluating
+            evaluating=evaluating,
+            geowiki_set=geowiki_set,
         )
 
     def train_dataloader(self):
@@ -418,7 +436,7 @@ class LandCoverMapper(pl.LightningModule):
     ) -> Dict[str, float]:
 
         if len(preds) == 0:
-            # sometimes this happens in the warmup
+            # sometimes this happens in the warmup. Or when using multiheaded and there are no global labels
             return {}
 
         output_dict: Dict[str, float] = {}
@@ -538,7 +556,7 @@ class LandCoverMapper(pl.LightningModule):
 
         parser.add_argument("--add_togo", dest="add_togo", action="store_true")
         parser.add_argument("--exclude_togo", dest="add_togo", action="store_false")
-        parser.set_defaults(add_togo=True)
+        parser.set_defaults(add_togo=False)
 
         parser.add_argument("--add_geowiki", dest="add_geowiki", action="store_true")
         parser.add_argument(
