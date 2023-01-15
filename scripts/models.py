@@ -25,6 +25,7 @@ if __name__ == "__main__":
     # MODIFICATION TO MODEL PARAMETERS
     new_model_args_dict = vars(model_args)
     new_model_args_dict['add_togo'] = False
+    new_model_args_dict['add_nigeria'] = True
     #new_model_args_dict['multi_headed'] = False
     #new_model_args_dict['num_classification_layers'] = 1
     #new_model_args_dict['max_epochs'] = 1000 # Just for dev
