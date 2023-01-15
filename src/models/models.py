@@ -199,7 +199,7 @@ class LandCoverMapper(pl.LightningModule):
             return x_global
 
     def get_dataset(
-        self, subset: str, normalizing_dict: Optional[Dict] = None
+        self, subset: str, normalizing_dict: Optional[Dict] = None, evaluating: bool = False
     ) -> LandTypeClassificationDataset:
         return LandTypeClassificationDataset(
             data_folder=self.data_folder,
@@ -210,6 +210,7 @@ class LandCoverMapper(pl.LightningModule):
             include_nigeria=self.hparams.add_nigeria,
             normalizing_dict=normalizing_dict,
             remove_b1_b10=self.hparams.remove_b1_b10,
+            evaluating=evaluating
         )
 
     def train_dataloader(self):
@@ -232,7 +233,7 @@ class LandCoverMapper(pl.LightningModule):
         Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
         '''  
         return DataLoader(
-            self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict),
+            self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict, evaluating=True),
             batch_size=self.hparams.batch_size,
         )
 
@@ -555,7 +556,7 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument(
             "--not_multi_headed", dest="multi_headed", action="store_false"
         )
-        parser.set_defaults(multi_headed=True)
+        parser.set_defaults(multi_headed=False)
 
         temp_args = parser.parse_known_args()[0]
         return STR2BASE[temp_args.model_base].add_base_specific_arguments(parser)

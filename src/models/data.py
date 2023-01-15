@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -41,6 +42,8 @@ class LandTypeClassificationDataset(Dataset):
         include_nigeria: bool,
         remove_b1_b10: bool,
         normalizing_dict: Optional[Dict] = None,
+        evaluating: bool = False,
+        include_nigeria_farmlands: bool = False,
     ) -> None:
 
         self.normalizing_dict: Optional[Dict] = None
@@ -54,60 +57,72 @@ class LandTypeClassificationDataset(Dataset):
 
         self.crop_probability_threshold = crop_probability_threshold
 
-        # if (subset == "testing") and (self.features_dir / NigeriaProcessor.dataset / subset).exists(): # If the test set for Nigeria exist it will use it instead of the 
-        #     print("Evaluating using the Nigeria evaluation dataset!")
-
-        #     assert normalizing_dict is not None # we want to normalize our test set with the training and val data statistics 
-        #     self.normalizing_dict = normalizing_dict
-
-        #     self.pickle_files, _ = self.load_files_and_normalizing_dict(
-        #         self.features_dir / NigeriaProcessor.dataset, subset
-        #     )
-        #     print(f'Number of instances in {NigeriaProcessor.dataset} test set: {len(self.pickle_files)}')
-        #     print(self.normalizing_dict)
-
-        # else:
-        assert (
-            max(include_geowiki, include_togo, include_nigeria) is True
-        ), "At least one dataset must be included"
-
-        files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
-
-        if include_geowiki:
-
-            geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
-                self.features_dir / GeoWikiExporter.dataset , self.subset_name
-            )
-            print(f'Number of geowiki instances in {self.subset_name} set: {len(geowiki_files)}')
-
-            files_and_dicts.append((geowiki_files, geowiki_nd))
-
-        if include_togo:
-            togo_files, togo_nd = self.load_files_and_normalizing_dict(
-                self.features_dir / TogoProcessor.dataset, self.subset_name,
-            )
-            files_and_dicts.append((togo_files, togo_nd))
+        # To evaluate/test (using test dalaloader). We use Nigeria dataset validation folder (for dev) or testing folder (for final results)
+        if evaluating and subset in ["validation", "testing"]:
             
-        if include_nigeria:
-            nigeria_files, nigeria_nd = self.load_files_and_normalizing_dict(
-                self.features_dir / NigeriaProcessorNew.dataset, self.subset_name,
-            )
-            files_and_dicts.append((nigeria_files, nigeria_nd))
-
-        if normalizing_dict is None:
-            # if a normalizing dict wasn't passed to the constructor,
-            # then we want to make our own
-            self.normalizing_dict = self.adjust_normalizing_dict(
-                [(len(x[0]), x[1]) for x in files_and_dicts]
-            )
-        else:
+            print(f"Evaluating using the Nigeria dataset {subset} folder")
+            assert normalizing_dict is not None # we want to normalize our test set with the training and val data statistics 
             self.normalizing_dict = normalizing_dict
 
-        pickle_files: List[Path] = []
-        for files, _ in files_and_dicts:
-            pickle_files.extend(files)
-        self.pickle_files = pickle_files
-        print(f"{len(self.pickle_files)} files in {subset}")
+            self.pickle_files, _ = self.load_files_and_normalizing_dict(
+                self.features_dir / NigeriaProcessorNew.dataset, subset
+            )
+            print(f'Number of instances in {NigeriaProcessorNew.dataset} test set: {len(self.pickle_files)}')
+            print(self.normalizing_dict)
+
+        # For training and validation
+        else:
+            assert (
+                max(include_geowiki, include_togo, include_nigeria) is True
+            ), "At least one dataset must be included"
+
+            files_and_dicts: List[Tuple[List[Path], Optional[Dict]]] = []
+
+            ### Grab files and normalizing dicts from each dataset ###
+            if include_geowiki:
+
+                geowiki_files, geowiki_nd = self.load_files_and_normalizing_dict(
+                    self.features_dir / GeoWikiExporter.dataset , self.subset_name
+                )
+                files_and_dicts.append((geowiki_files, geowiki_nd))
+                print(f'{subset} set -> number of instances of {GeoWikiExporter.dataset}: {len(geowiki_files)}')
+
+            if include_togo:
+                togo_files, togo_nd = self.load_files_and_normalizing_dict(
+                    self.features_dir / TogoProcessor.dataset, self.subset_name,
+                )
+                files_and_dicts.append((togo_files, togo_nd))
+                
+            if include_nigeria:
+                nigeria_files, nigeria_nd = self.load_files_and_normalizing_dict(
+                    self.features_dir / NigeriaProcessorNew.dataset, self.subset_name,
+                )
+                files_and_dicts.append((nigeria_files, nigeria_nd))
+                print(f'{subset} set -> number of instances of {NigeriaProcessorNew.dataset}: {len(nigeria_files)}')
+
+            if include_nigeria_farmlands:
+                # For now only has a testing folder so shouldn't include anything
+                nigeria_farmlands_files, nigeria_farmlands_nd = self.load_files_and_normalizing_dict(
+                    self.features_dir / NigeriaProcessor.dataset, self.subset_name
+                )
+                files_and_dicts.append((nigeria_farmlands_files, nigeria_farmlands_nd))
+                print(f'{subset} set -> number of instances of {NigeriaProcessor.dataset}: {len(nigeria_farmlands_files)}')
+
+            ### Combine the datasets ###
+            if normalizing_dict is None:
+                # if a normalizing dict wasn't passed to the constructor,
+                # then we want to make our own
+                self.normalizing_dict = self.adjust_normalizing_dict(
+                    [(len(x[0]), x[1]) for x in files_and_dicts]
+                )
+            else:
+                self.normalizing_dict = normalizing_dict
+
+            pickle_files: List[Path] = []
+            for files, _ in files_and_dicts:
+                pickle_files.extend(files)
+            self.pickle_files = pickle_files
+            print(f"{len(self.pickle_files)} files in total used for {subset}")
 
     @property
     def num_output_classes(self) -> int:
