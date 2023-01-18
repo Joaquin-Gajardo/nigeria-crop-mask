@@ -62,7 +62,9 @@ class LandCoverMapper(pl.LightningModule):
         Togo. If False, the same classification layer will be used to classify
         all pixels. Default = True
     :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
-    :param hparams.countries_subset: List of countries to use from geowiki. Default = None
+    :param hparams.geowiki_subset: List of countries to use from geowiki. Default = None
+    :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train the model.
+        Default = True
     """
 
     def __init__(self, hparams: Namespace) -> None:
@@ -75,10 +77,14 @@ class LandCoverMapper(pl.LightningModule):
         self.data_folder = Path(hparams.data_folder)
 
         if self.hparams.add_geowiki:
-            # TODO: modify to also mind combined normalizing dict, if we include not only geowiki in training and validation
-            countries_subset = None
-            #countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
-            #countries_subset = ['Nigeria']
+            if hparams.geowiki_subset == 'nigeria':
+                countries_subset = ['Nigeria']
+            elif hparams.geowiki_subset == 'neighbours1':
+                countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
+            elif hparams.geowiki_subset == 'neighbours2':
+                countries_subset = ['Nigeria', 'Benin', 'Niger', 'Chad', 'Cameroon']
+            else: # world
+                countries_subset = None
             geowiki_dataset = GeowikiDataset(
                 data_folder=self.data_folder,
                 countries_subset=countries_subset,
@@ -564,6 +570,10 @@ class LandCoverMapper(pl.LightningModule):
         )
         parser.set_defaults(add_geowiki=True)
 
+        parser.add_argument("--add_nigeria", dest="add_nigeria", action="store_true")
+        parser.add_argument("--exclude_nigeria", dest="add_nigeria", action="store_false")
+        parser.set_defaults(add_nigeria=True)
+        
         parser.add_argument(
             "--remove_b1_b10", dest="remove_b1_b10", action="store_true"
         )

@@ -1,6 +1,8 @@
 import sys
 import numpy as np
 import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point
 from pathlib import Path
 import pickle
 from tqdm import tqdm
@@ -58,6 +60,8 @@ class LandTypeClassificationDataset(Dataset):
         self.subset_name = subset
 
         self.crop_probability_threshold = crop_probability_threshold
+
+        self.target_country_borders = gpd.read_file(Path('../assets/nigeria_borders.shp')) # Assumes target country is Nigeria. TODO: take from geowiki_set.countries_to_weight and natural earth countries shapefiles
 
         # To evaluate/test (using test dalaloader). We use Nigeria dataset validation folder (for dev) or testing folder (for final results)
         if evaluating and subset in ["validation", "testing"]:
@@ -162,7 +166,9 @@ class LandTypeClassificationDataset(Dataset):
             )
 
         weight = 0
-        if target_datainstance.isin(STR2BB["Nigeria"]):
+        point = Point(target_datainstance.instance_lon, target_datainstance.instance_lat)
+        if self.target_country_borders.contains(point).bool():
+        #if target_datainstance.isin(STR2BB["Nigeria"]):
             weight = 1
 
         return (
@@ -428,7 +434,7 @@ class GeowikiDataset(Dataset):
         print('Normalizing dict not found.')
         return None
 
-    def get_normalizing_dict(self, save: bool=False) -> Dict:
+    def get_normalizing_dict(self, save: bool=True) -> Dict:
         # Return dict if it was found or create it and save
         default_file_name = "normalizing_dict.pkl"
         file_path = self.search_normalizing_dict(default_file_name)
@@ -456,7 +462,7 @@ class GeowikiDataset(Dataset):
                     file_name = f"{prefix}_{countries_str}.pkl"
                 else:
                     file_name = default_file_name
-                file_path = self.data_dir / file_name
+                file_path = self.dataset_dir / file_name
                 print('Saving normalizing dict', file_path.name)
                 with file_path.open("wb") as f:
                     pickle.dump(normalizing_dict, f)

@@ -17,14 +17,15 @@ if __name__ == "__main__":
     parser.add_argument("--gpus", type=int, default=0)
     parser.add_argument("--wandb", default=False, action="store_true")
     parser.add_argument("--weighted_loss_fn", default=False, action="store_true")
-    parser.add_argument("--add_nigeria", default=False, action="store_true")
+    #parser.add_argument("--add_nigeria", default=False, action="store_true")
+    parser.add_argument("--geowiki_subset", default="world", choices=["nigeria", "neighbours1", "neighbours2", "world"], help="It will be ignored if geowiki was excluded.")
 
     model_args = STR2MODEL["land_cover"].add_model_specific_args(parser).parse_args()
     print('Default model arguments: ', model_args)
 
     # MODIFICATION TO MODEL PARAMETERS
     new_model_args_dict = vars(model_args)
-    new_model_args_dict['add_nigeria'] = True
+    #new_model_args_dict['add_nigeria'] = True
     #new_model_args_dict['num_classification_layers'] = 1
     #new_model_args_dict['max_epochs'] = 1000 # Just for dev
     #new_model_args_dict['accelerator'] = 'gpu'  # only in newer lightning versions
