@@ -90,6 +90,15 @@ activate this environment, run
 conda activate landcover-mapping
 ```
 
+Install geemap environment:
+```bash
+conda create -n geemap
+conda activate geemap
+conda install geopandas
+conda install geemp -c conda-forge
+```
+
+
 #### Earth Engine
 
 Earth engine is used to export data. To use it, once the conda environment has been activated, run
