@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 import numpy as np
@@ -62,7 +63,7 @@ class LandCoverMapper(pl.LightningModule):
         Togo. If False, the same classification layer will be used to classify
         all pixels. Default = True
     :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
-    :param hparams.geowiki_subset: List of countries to use from geowiki. Default = None
+    :param hparams.geowiki_subset: List of countries to use from geowiki. Choices=["nigeria", "neighbours1", "neighbours2", "world"]. Default = "world".
     :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train the model.
         Default = True
     """
@@ -71,6 +72,7 @@ class LandCoverMapper(pl.LightningModule):
         super().__init__()
 
         set_seed() # NOTE: will probably have to unset if I want to do several runs
+        hparams = Namespace(**hparams) if not isinstance(hparams, Namespace) else hparams
         self.hparams = hparams
         
         # Dataset
@@ -241,13 +243,15 @@ class LandCoverMapper(pl.LightningModule):
         return DataLoader(
             self.get_dataset(subset="training"),
             shuffle=True,
-            batch_size=self.hparams.batch_size,  
+            batch_size=self.hparams.batch_size,
+            num_workers=os.cpu_count()  
         )                                           
 
     def val_dataloader(self):
         return DataLoader(
             self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict),
             batch_size=self.hparams.batch_size,
+            num_workers=os.cpu_count()  
         )
 
     def test_dataloader(self):
@@ -258,7 +262,9 @@ class LandCoverMapper(pl.LightningModule):
         '''  
         return DataLoader(
             self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict, evaluating=True),
+            #self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict, evaluating=True),
             batch_size=self.hparams.batch_size,
+            num_workers=os.cpu_count()  
         )
 
     def configure_optimizers(self):
@@ -573,6 +579,8 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument("--add_nigeria", dest="add_nigeria", action="store_true")
         parser.add_argument("--exclude_nigeria", dest="add_nigeria", action="store_false")
         parser.set_defaults(add_nigeria=True)
+
+        parser.add_argument("--geowiki_subset", default="world", choices=["nigeria", "neighbours1", "neighbours2", "world"], help="It will be ignored if geowiki was excluded.")
         
         parser.add_argument(
             "--remove_b1_b10", dest="remove_b1_b10", action="store_true"

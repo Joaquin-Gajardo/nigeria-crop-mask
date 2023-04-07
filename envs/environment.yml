@@ -1,16 +1,16 @@
-name: nigeria-gpu
+name: nigeria-crop-mask
 channels:
   - defaults
 dependencies:
   - python=3.6  # earthengine doesn't play with python 3.7
-  - earthengine-api
+  #- earthengine-api
   - pandas
   - xarray
   - rasterio
   - jupyter
   - matplotlib
   - pytorch
-  - cudatoolkit
+  #- cudatoolkit
   - pyproj
   - tqdm
   - geopandas

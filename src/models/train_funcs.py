@@ -19,7 +19,7 @@ def train_model(model: pl.LightningModule, hparams: Namespace) -> Tuple[pl.Light
         mode="min",
     )
     trainer = pl.Trainer(
-        default_save_path=hparams.data_folder,
+        default_root_dir=hparams.data_folder,
         max_epochs=hparams.max_epochs,
         early_stop_callback=early_stop_callback,
         gpus=hparams.gpus,
