@@ -21,4 +21,8 @@ dependencies:
   - conda-forge::pytorch-lightning=0.8.5 # 0.7.1 not available on conda-forge
   - google-auth-oauthlib 
   - conda-forge::earthengine-api
+  - conda-forge::rioxarray
   - conda-forge::wandb
+  - conda-forge::geemap
+  - pip:
+    - cropharvest

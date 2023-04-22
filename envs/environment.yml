@@ -21,7 +21,7 @@ dependencies:
       - google-api-python-client  # google drive
       - google-auth-httplib2  # google drive
       - google-auth-oauthlib  # google drive
-      - gdown  # google drive
+      #- gdown  # google drive
       - earthengine-api
       - rioxarray # newly added to write xarrays to tiff
       - wandb
