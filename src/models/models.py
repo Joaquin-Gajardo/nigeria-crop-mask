@@ -592,6 +592,7 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument(
             "--not_multi_headed", dest="multi_headed", action="store_false"
         )
+        parser.add_argument("--weighted_loss_fn", action="store_true")
         parser.set_defaults(multi_headed=False)
 
         temp_args = parser.parse_known_args()[0]
