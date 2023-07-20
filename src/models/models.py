@@ -22,7 +22,7 @@ from sklearn.metrics import (
 
 from src.utils import set_seed
 from .model_bases import STR2BASE
-from .data import LandTypeClassificationDataset, GeowikiDataset
+from .data import LandTypeClassificationDataset, GeowikiCropHarvestDataset, NigeriaCropHarvestDataset
 from .utils import tif_to_np, preds_to_xr
 
 from typing import cast, Callable, Tuple, Dict, Any, Type, Optional, List, Union
@@ -64,7 +64,7 @@ class LandCoverMapper(pl.LightningModule):
         all pixels. Default = True
     :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
     :param hparams.geowiki_subset: List of countries to use from geowiki. Choices=["nigeria", "neighbours1", "neighbours2", "world"]. Default = "world".
-    :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train the model.
+    :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train and validate the model.
         Default = True
     """
 
@@ -87,22 +87,18 @@ class LandCoverMapper(pl.LightningModule):
                 countries_subset = ['Nigeria', 'Benin', 'Niger', 'Chad', 'Cameroon']
             else: # world
                 countries_subset = None
-            geowiki_dataset = GeowikiDataset(
-                data_folder=self.data_folder,
-                countries_subset=countries_subset,
-                countries_to_weight=['Nigeria'],
-                remove_b1_b10=self.hparams.remove_b1_b10,
-                crop_probability_threshold=self.hparams.probability_threshold,
+
+            geowiki_dataset = GeowikiCropHarvestDataset(
+                root=self.data_folder / "cropharvest",
+                countries_subset=countries_subset
             )
 
-            geowiki_dataset_splits = geowiki_dataset.train_val_split(geowiki_dataset)
-            self.geowiki_train_dataset = geowiki_dataset_splits[0]
-            self.geowiki_val_dataset = geowiki_dataset_splits[1]
+            self.geowiki_train, self.geowiki_val = geowiki_dataset.train_val_split(geowiki_dataset)
 
-        dataset = self.get_dataset(subset="training")
+        dataset_train = self.get_dataset(subset="training")
 
-        self.input_size = dataset.num_input_features
-        self.num_outputs = dataset.num_output_classes
+        self.input_size = dataset_train.num_input_features
+        self.num_outputs = dataset_train.num_output_classes
 
         # we save the normalizing dict because we calculate weighted
         # normalization values based on the datasets we combine. --> from adjust_normalizing_dict function
@@ -110,11 +106,11 @@ class LandCoverMapper(pl.LightningModule):
         # vary between the train / test / val sets - this ensures the normalizing
         # dict stays constant between them
         ###  See NOTE on test_dataloader for explanation ###
-        self.normalizing_dict = dataset.normalizing_dict # -> we'll use it for test set
+        self.normalizing_dict = dataset_train.normalizing_dict # -> we'll use it for test set
 
         if self.hparams.weighted_loss_fn:
-            val_dataset = self.get_dataset(subset="validation")
-            self.global_class_weights, self.local_class_weights = self.get_class_weights([dataset, val_dataset])
+            dataset_val = self.get_dataset(subset="validation")
+            self.global_class_weights, self.local_class_weights = self.get_class_weights([dataset_train, dataset_val])
             print('Global class weights:', self.global_class_weights)
             print('Local class weights:', self.local_class_weights)
 
@@ -214,29 +210,64 @@ class LandCoverMapper(pl.LightningModule):
             return x_global, x_local
 
         else:
-            return x_global
+            return x_global 
 
     def get_dataset(
         self, subset: str, normalizing_dict: Optional[Dict] = None, evaluating: bool = False
     ) -> LandTypeClassificationDataset:
-        geowiki_set = None
+        
+        # Geowiki
+        geowiki_dataset = None
         if self.hparams.add_geowiki:
+            # # Define subset
+            # if self.hparams.geowiki_subset == 'nigeria':
+            #     countries_subset = ['Nigeria']
+            # elif self.hparams.geowiki_subset == 'neighbours1':
+            #     countries_subset = ['Ghana', 'Togo', 'Nigeria', 'Cameroon', 'Benin']
+            # elif self.hparams.geowiki_subset == 'neighbours2':
+            #     countries_subset = ['Nigeria', 'Benin', 'Niger', 'Chad', 'Cameroon']
+            # else: # world
+            #     countries_subset = None
+
+            # # Define split
+            # geowiki_dataset = GeowikiCropHarvestDataset(
+            #     root=self.data_folder / "cropharvest",
+            #     countries_subset=countries_subset
+            # )
+            # geowiki_train, geowiki_val = geowiki_dataset.train_val_split(geowiki_dataset)
+
+            # Define split
             if subset == 'training':
-                geowiki_set = self.geowiki_train_dataset
+                geowiki_dataset = self.geowiki_train
             elif subset == 'validation':
-                geowiki_set = self.geowiki_val_dataset
+                geowiki_dataset = self.geowiki_val
+
+        # Nigeria
+        nigeria_root_path = self.data_folder / 'features' / 'nigeria-cropharvest'
+        nigeria_dataset = None
+        if self.hparams.add_nigeria or (subset == 'testing') or (subset == "validation" and evaluating):
+            # We want to define Nigeria dataset in the following not mutually exclusive cases: 1) for training (i.e. when add_nigeria=True);
+            # 2) for testing with test split; 3) for testing with validation split during development (i.e. evaluating=True).
+            nigeria_dataset = NigeriaCropHarvestDataset(nigeria_root_path, split=subset)      
+
+        # if subset == 'training' and self.hparams.add_nigeria:
+        #     nigeria_dataset = NigeriaCropHarvestDataset(nigeria_root_path, split=subset)      
+        # elif subset == 'validation' and (self.hparams.add_nigeria or evaluating):
+        #     # This allows to use Nigeria validation set for testing even if we're not using Nigeria dataset for training (add_nigeria=False)
+        #     nigeria_dataset = NigeriaCropHarvestDataset(nigeria_root_path, split=subset)      
+        # elif subset == 'testing':
+        #     # We always want use Nigeria dataset at least for testing even if we're not using Nigeria dataset for training (add_nigeria=False)
+        #     nigeria_dataset = NigeriaCropHarvestDataset(nigeria_root_path, split=subset) 
+
 
         return LandTypeClassificationDataset(
-            data_folder=self.data_folder,
             subset=subset,
-            crop_probability_threshold=self.hparams.probability_threshold,
             include_geowiki=self.hparams.add_geowiki,
-            include_togo=self.hparams.add_togo,
             include_nigeria=self.hparams.add_nigeria,
-            normalizing_dict=normalizing_dict,
-            remove_b1_b10=self.hparams.remove_b1_b10,
             evaluating=evaluating,
-            geowiki_set=geowiki_set,
+            geowiki_dataset=geowiki_dataset,
+            nigeria_dataset=nigeria_dataset,
+            normalizing_dict=normalizing_dict,
         )
 
     def train_dataloader(self):
@@ -258,11 +289,11 @@ class LandCoverMapper(pl.LightningModule):
         '''
         NOTE about normalizing dict:
         Same normalizing dict as in train and val dataset is passed. It's calculated from all train and val samples used.
-        Additionally, if different datasets are used (geowiki, togo) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
+        Additionally, if different datasets are used (geowiki, nigeria) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
         '''  
         return DataLoader(
-            self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict, evaluating=True),
-            #self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict, evaluating=True),
+            #self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict, evaluating=True), # during dev, this will use validation set for testing
+            self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict, evaluating=True),
             batch_size=self.hparams.batch_size,
             num_workers=os.cpu_count()  
         )
