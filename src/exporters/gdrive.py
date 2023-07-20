@@ -14,6 +14,7 @@ class GDriveExporter:
     """
 
     scopes = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
+    scopes = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
 
     def __init__(self, data_folder: Path, dataset: str) -> None:
         self.data_folder = data_folder
@@ -49,15 +50,15 @@ class GDriveExporter:
 
         self.service = build("drive", "v3", credentials=creds)
 
-    def export(self, max_downloads: Optional[int] = None) -> None:
+    def export(self, folder_name: str, max_downloads: Optional[int] = None) -> None:
         r"""
-        Download all tiffs from Google Drive folder with name specified in the self.dataset instance attribute.  
+        Download all tiffs from a Google Drive folder.
 
+        :param folder_name: will download all tiffs in this folder.
         :param max_downloads: The max number of downloads. If None, all tiff files containing
             region_name are downloaded
         """
         # Get parent folder ID
-        folder_name = self.dataset
         query = f'(fullText contains "{folder_name}") and (mimeType = "application/vnd.google-apps.folder")'
 
         folder_info: List[Dict] = [] 
