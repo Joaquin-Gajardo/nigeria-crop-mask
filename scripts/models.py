@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--gpus", type=int, default=0)
     parser.add_argument("--wandb", default=False, action="store_true")
-    parser.add_argument("--weighted_loss_fn", default=False, action="store_true")
+    #parser.add_argument("--weighted_loss_fn", default=False, action="store_true")
     #parser.add_argument("--add_nigeria", default=False, action="store_true")
     #parser.add_argument("--geowiki_subset", default="world", choices=["nigeria", "neighbours1", "neighbours2", "world"], help="It will be ignored if geowiki was excluded.")
 

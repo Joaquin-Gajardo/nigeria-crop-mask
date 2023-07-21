@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 from tqdm import tqdm
+from datetime import datetime
+import json
 
 import pytorch_lightning as pl
 import torch
@@ -333,8 +335,19 @@ class LandCoverMapper(pl.LightningModule):
     def test_epoch_end(self, outputs):
         avg_loss = torch.stack([x["test_loss"] for x in outputs]).mean().item()
 
-        output_dict = {"test_loss": avg_loss}
+        output_dict = {'final_epoch': self.current_epoch + 1, 'add_nigeria': self.hparams.add_nigeria,
+                        'add_geowiki': self.hparams.add_geowiki, 'geowiki_subset': self.hparams.geowiki_subset,
+                        'multi_headed': self.hparams.multi_headed, 'weighted_loss_fn': self.hparams.weighted_loss_fn,
+                        "test_loss": avg_loss}
         output_dict.update(self.get_interpretable_metrics(outputs, prefix="test_"))
+    
+        # Save results into file
+        if self.hparams.save_results:
+            results_path = self.data_folder.resolve().parent / 'results' / self.hparams.exp_name / self.model_base_name
+            results_path.mkdir(parents=True, exist_ok=True)
+            file_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            with open(results_path / file_name, 'w') as f:
+                json.dump(output_dict, f)
 
         return {"progress_bar": output_dict}
 
@@ -364,14 +377,14 @@ class LandCoverMapper(pl.LightningModule):
 
         if self.hparams.multi_headed:
             r_preds = (
-                torch.cat([x["Togo_pred"] for x in outputs]).detach().cpu().numpy()
+                torch.cat([x["Nigeria_pred"] for x in outputs]).detach().cpu().numpy()
             )
             r_labels = (
-                torch.cat([x["Togo_label"] for x in outputs]).detach().cpu().numpy()
+                torch.cat([x["Nigeria_label"] for x in outputs]).detach().cpu().numpy()
             )
 
-            np.save(save_dir / "Togo_preds.npy", r_preds)
-            np.save(save_dir / "Togo_labels.npy", r_labels)
+            np.save(save_dir / "Nigeria_preds.npy", r_preds)
+            np.save(save_dir / "Nigeria_labels.npy", r_labels)
 
     def predict(
         self,
@@ -464,12 +477,12 @@ class LandCoverMapper(pl.LightningModule):
         if self.hparams.multi_headed:
             output_dict.update(
                 self.single_output_metrics(
-                    torch.cat([x["Togo_pred"] for x in outputs]).detach().cpu().numpy(),
-                    torch.cat([x["Togo_label"] for x in outputs])
+                    torch.cat([x["Nigeria_pred"] for x in outputs]).detach().cpu().numpy(),
+                    torch.cat([x["Nigeria_label"] for x in outputs])
                     .detach()
                     .cpu()
                     .numpy(),
-                    prefix=f"{prefix}Togo_",
+                    prefix=f"{prefix}Nigeria_",
                 )
             )
         return output_dict
@@ -486,15 +499,25 @@ class LandCoverMapper(pl.LightningModule):
         if not (labels == labels[0]).all():
             # This can happen when lightning does its warm up on a subset of the
             # validation data
-            output_dict[f"{prefix}roc_auc_score"] = roc_auc_score(labels, preds)
+            output_dict[f"{prefix}roc_auc_score"] = roc_auc_score(labels, preds).item()
 
         preds = (preds > self.hparams.probability_threshold).astype(int)
 
-        output_dict[f"{prefix}precision_score"] = precision_score(labels, preds, zero_division=0)
-        output_dict[f"{prefix}recall_score"] = recall_score(labels, preds)
-        output_dict[f"{prefix}f1_score"] = f1_score(labels, preds)
-        output_dict[f"{prefix}accuracy"] = accuracy_score(labels, preds)
-        print('confusion matrix:', confusion_matrix(labels, preds))
+        output_dict[f"{prefix}precision_score"] = precision_score(labels, preds, zero_division=0).item()
+        output_dict[f"{prefix}recall_score"] = recall_score(labels, preds).item()
+        output_dict[f"{prefix}f1_score"] = f1_score(labels, preds).item()
+        output_dict[f"{prefix}accuracy"] = accuracy_score(labels, preds).item()
+        
+        # Confusion matrix
+        cm = confusion_matrix(labels, preds)
+        print('confusion matrix:', cm.tolist())
+        if 'val' not in prefix:
+            tn, fp, fn, tp = cm.ravel()
+            output_dict[f"{prefix}TN"] = tn.item()
+            output_dict[f"{prefix}FP"] = fp.item()
+            output_dict[f"{prefix}FN"] = fn.item()
+            output_dict[f"{prefix}TP"] = tp.item()
+
         return output_dict
 
     def _split_preds_and_get_loss(
@@ -539,8 +562,8 @@ class LandCoverMapper(pl.LightningModule):
                     {
                         "pred": global_preds,
                         "label": global_labels,
-                        "Togo_pred": local_preds,
-                        "Togo_label": local_labels,
+                        "Nigeria_pred": local_preds,
+                        "Nigeria_label": local_labels,
                     }
                 )
         else:
@@ -623,8 +646,11 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument(
             "--not_multi_headed", dest="multi_headed", action="store_false"
         )
-        parser.add_argument("--weighted_loss_fn", action="store_true")
         parser.set_defaults(multi_headed=False)
+        parser.add_argument("--weighted_loss_fn", action="store_true")
+        parser.add_argument("--exp_name", default='dry_runs', type=str)
+        parser.add_argument("--save_results", action="store_true")
+        parser.set_defaults(save_results=True)
 
         temp_args = parser.parse_known_args()[0]
         return STR2BASE[temp_args.model_base].add_base_specific_arguments(parser)

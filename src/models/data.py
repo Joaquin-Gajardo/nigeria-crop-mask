@@ -24,6 +24,8 @@ from cropharvest.bands import BANDS
 
 S2_BANDS = ['B2','B3','B4','B5','B6','B7','B8','B8A','B9','B11','B12','NDVI']
 
+here = Path(__file__).parent
+ROOT = here.parent.parent
 
 class BaseCropHarvestDataset:
     root: Path
@@ -115,7 +117,7 @@ class GeowikiCropHarvestDataset(BaseCropHarvestDataset):
             self.normalizing_dict = normalizing_dict  
 
     def _add_country(self):
-        world_map = gpd.read_file('../assets/ne_50m_admin_0_countries/ne_50m_admin_0_countries.shp') # TODO: maybe move to utils to access from different places with a fixed path to assets
+        world_map = gpd.read_file(ROOT / 'assets' / 'ne_50m_admin_0_countries' / 'ne_50m_admin_0_countries.shp') # TODO: maybe move to utils to access from different places with a fixed path to assets
         labels = self.labels.copy()
         join_df = gpd.sjoin(labels, world_map, how='left', op="within")[['index', 'ADMIN']] # spatial merge and keep only necessary columns
         new_labels = pd.merge(labels, join_df, on='index', how='left')
@@ -224,7 +226,7 @@ class LandTypeClassificationDataset(Dataset):
 
         assert subset in ["training", "validation", "testing"]
         self.subset_name = subset
-        self.target_country_borders = gpd.read_file(Path('../assets/nigeria_borders.shp')) # Assumes target country is Nigeria. TODO: take from geowiki_set.countries_to_weight and natural earth countries shapefiles
+        self.target_country_borders = gpd.read_file(ROOT / 'assets' / 'nigeria_borders.shp') # Assumes target country is Nigeria. TODO: take from geowiki_set.countries_to_weight and natural earth countries shapefiles
 
         self.datasets: Dict[str: gpd.GeoDataFrame] = dict()
 
