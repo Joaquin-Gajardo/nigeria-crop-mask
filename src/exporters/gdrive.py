@@ -1,6 +1,7 @@
 from pathlib import Path
 import pickle
 
+import gdown
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -13,7 +14,6 @@ class GDriveExporter:
     An exporter to download data from Google Drive
     """
 
-    scopes = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
     scopes = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
 
     def __init__(self, data_folder: Path, dataset: str) -> None:
@@ -50,7 +50,7 @@ class GDriveExporter:
 
         self.service = build("drive", "v3", credentials=creds)
 
-    def export(self, folder_name: str, max_downloads: Optional[int] = None) -> None:
+    def list_files_in_folder(self, folder_name: str, max_downloads: Optional[int] = None) -> None:
         r"""
         Download all tiffs from a Google Drive folder.
 
@@ -109,27 +109,46 @@ class GDriveExporter:
 
             next_page = results.get("nextPageToken", None)
 
-        print(f"Downloading {len(file_info)} tiff files from {folder_name} folder in Google Drive")
+        print(f"There are {len(file_info)} tiff files from {folder_name} folder in Google Drive")
+        
 
-        for idx, individual_file in enumerate(file_info):
-            if (max_downloads is not None) and (idx >= max_downloads):
-                return None
+        # for idx, individual_file in enumerate(file_info):
+        #     if (max_downloads is not None) and (idx >= max_downloads):
+        #         return None
 
-            print(f"Downloading {individual_file['name']}")
+        #     print(f"Downloading {individual_file['name']}")
 
-            url = f"https://drive.google.com/uc?id={individual_file['id']}"
+        #     url = f"https://drive.google.com/uc?id={individual_file['id']}"
 
-            download_path = (
-                self.output_folder / individual_file["name"]
-            )
+        #     download_path = (
+        #         self.output_folder / individual_file["name"]
+        #     )
             
-            if download_path.exists():
-                print(f"File already exists! Skipping")
-                continue
+        #     if download_path.exists():
+        #         print(f"File already exists! Skipping")
+        #         continue
 
-            data = self.service.files().get_media(fileId=individual_file['id']).execute() # https://stackoverflow.com/questions/65053558/google-drive-api-v3-files-export-method-throws-a-403-error-export-only-support
-            if data:
-                with open(download_path, 'wb') as f:
-                    f.write(data)
+        #     data = self.service.files().get_media(fileId=individual_file['id']).execute() # https://stackoverflow.com/questions/65053558/google-drive-api-v3-files-export-method-throws-a-403-error-export-only-support
+        #     if data:
+        #         with open(download_path, 'wb') as f:
+        #             f.write(data)
 
-        print('Program finished')
+        # print('Program finished')
+
+        return file_info
+    
+    def export(self, file_info: Dict) -> None:
+
+        if file_info is not None:
+            for i, file in enumerate(file_info):
+                file_id = file['id']
+                file_name = file['name']
+                output_path = self.output_folder / file_name.split('/')[-1]
+
+                if output_path.exists():
+                    print("File already exists! Skipping")
+                    continue
+
+                print(f"Downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
+                gdown.download(id=file_id, output=str(output_path), quiet=False)
+
