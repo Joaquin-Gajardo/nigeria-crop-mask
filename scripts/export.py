@@ -58,12 +58,16 @@ def export_gdrive_nigeria():
     exporter.export()
 
 
-def export_gdrive_nigeria_S1(api_key=None):
+def export_gdrive_nigeria_S1(multiprocessing=False, min_index=None):
     # We need to put the credentials.json file in th output folder (get it from the google clound console). 
     # A token.json file will be generated on the same folder after authentification.
+    
     exporter = GDriveExporter(Path('/media/Elements-12TB/satellite_images/nigeria'), dataset='nigeria-full-country-2020')
-    exporter.export(folder_name='test_eo_data')
-
+    
+    if not multiprocessing:
+        exporter.export(folder_name='test_eo_data')
+    # else:
+    #     assert isinstance(min_index, int), f'min_index must be of integer type for using multiprocessing. {min_index} was given.'
 
 def cancel_tasks():
     cancel_all_tasks()
@@ -77,10 +81,25 @@ if __name__ == "__main__":
 
     #export_nigeria()
     #export_gdrive_nigeria()
-    export_gdrive_nigeria_S1()
+    #export_gdrive_nigeria_S1()
         
     ## Original ##
     #export_geowiki_sentinel_ee()
     #export_togo()
     #export_region()
     ##cancel_all_tasks()
+
+    import os
+    from multiprocessing import Pool
+    import numpy as np
+
+    exporter = GDriveExporter(Path('/media/Elements-12TB/satellite_images/nigeria'), dataset='nigeria-full-country-2020')
+    
+    def f(i):
+        exporter.export(folder_name='test_eo_data', min_index=i)
+        return None
+
+    workers = 20
+    with Pool(workers) as p:
+        start_indexes = [i*700 for i in range(workers)]
+        print(p.map(f, start_indexes))

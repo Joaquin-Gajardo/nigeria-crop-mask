@@ -1,7 +1,16 @@
+"""
+The official tutorial above only has an example for listing files!
+https://developers.google.com/drive/api/quickstart/python
+
+Took some ideas from the following links:
+Downloads: https://developers.google.com/drive/api/guides/manage-downloads
+Uploads: https://www.youtube.com/watch?v=fkWM7A-MxR0
+"""
+
 from pathlib import Path
-import pickle
 import os
 import io
+import multiprocessing  
 
 import pandas as pd
 import gdown
@@ -138,30 +147,33 @@ class GDriveExporter:
 
         return file_info
 
-    def export(self, folder_name: str, reversed_order: bool=False) -> None:
+    def export(self, folder_name: str, min_index: int=None) -> None:
         
         file_info = self.list_files_in_folder(folder_name)
-        if reversed_order:
-            file_info = reversed(file_info)
-
+        assert isinstance(min_index, int)
+       
         for i, file_metadata in enumerate(file_info):
+            
+            # For multiprocessing. Start from certain index
+            if (min_index is not None) and (i < min_index):
+                continue
             
             file_id = file_metadata['id']
             file_name = file_metadata['name'].split('/')[-1]
             output_path = self.output_folder / file_name
 
             if output_path.exists():
-                print(f"File {file_name} already exists! Skipping")
+                #print(f"File {file_name} already exists! Skipping")
                 continue
             else:
-                print(f"Downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
+                print(f"{multiprocessing.current_process()}: downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
                 try:
                     # Read file by chunks
                     request = self.service.files().get_media(fileId=file_id)
                     data = request.execute()
                     if data:
                         with open(output_path, 'wb') as f:
-                            print(f'Writing file to {output_path}')
+                            #print(f'Writing file to {output_path}')
                             f.write(data)    
 
                     # file = io.BytesIO()
