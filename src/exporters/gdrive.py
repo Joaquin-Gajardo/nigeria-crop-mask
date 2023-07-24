@@ -1,5 +1,6 @@
 from pathlib import Path
 import pickle
+import os
 
 import gdown
 from googleapiclient.discovery import build
@@ -137,7 +138,7 @@ class GDriveExporter:
 
         return file_info
     
-    def export(self, file_info: Dict) -> None:
+    def export_with_gdown(self, file_info: List[Dict]) -> None:
 
         if file_info is not None:
             for i, file in enumerate(file_info):
@@ -151,4 +152,22 @@ class GDriveExporter:
 
                 print(f"Downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
                 gdown.download(id=file_id, output=str(output_path), quiet=False)
+
+    def export_with_api_key(self, file_info: List[Dict], api_key: str) -> None:
+        """Hits solving captcha issue after a few requests."""
+        for i, file in enumerate(file_info):
+            file_id = file['id']
+            url = f'https://www.googleapis.com/drive/v3/files/{file_id}?alt=media&key={api_key}'
+            
+            file_name = file['name'].split('/')[-1]
+            output_path = self.output_folder / file_name
+
+            if output_path.exists():
+                print(f"File {file_name} already exists! Skipping")
+                continue
+            else:
+                print(f"Downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
+                os.system(f"curl -o {output_path} '{url}'")
+            
+
 
