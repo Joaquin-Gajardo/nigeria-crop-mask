@@ -94,7 +94,7 @@ class LandCoverMapper(pl.LightningModule):
                 root=self.data_folder / "cropharvest",
                 countries_subset=countries_subset
             )
-
+            # We make Geowiki data splits at class instanciation
             self.geowiki_train, self.geowiki_val = geowiki_dataset.train_val_split(geowiki_dataset)
 
         dataset_train = self.get_dataset(subset="training")

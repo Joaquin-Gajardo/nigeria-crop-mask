@@ -71,6 +71,7 @@ class BaseCropHarvestDataset:
 
 
 class NigeriaCropHarvestDataset(BaseCropHarvestDataset):
+    # TODO: Implement dataset creation in src code. This was created with CropHarvest.Engineer in notebook 14. 
     def __init__(self, root='../data/features/nigeria-cropharvest', split='testing'):    
         self.root = Path(root)
         self._labels = CropHarvestLabels(self.root).as_geojson()
@@ -80,6 +81,7 @@ class NigeriaCropHarvestDataset(BaseCropHarvestDataset):
         self._discard_missing_files()  
         self.filepaths = self.labels['path'].tolist()
         self.y_vals = self.labels['is_crop'].tolist()
+        # Normalizing dict created on notebook 14
         self.normalizing_dict = load_normalizing_dict(self.root/ FEATURES_DIR / 'normalizing_dict.h5')
     
 
