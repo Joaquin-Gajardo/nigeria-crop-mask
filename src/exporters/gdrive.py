@@ -143,55 +143,59 @@ class GDriveExporter:
         # Write files to disk
         print(f'Writing file names and ids to {file_path}')
         df = pd.DataFrame(file_info)
+        df['index'] = df['name'].apply(lambda x: int(x.split('/')[-1].split('-')[0]))
+        df = df.sort_values('index').reset_index(drop=True)
         df.to_csv(file_path, index=False)
 
         return file_info
 
-    def export(self, folder_name: str, min_index: int=None) -> None:
-        
-        file_info = self.list_files_in_folder(folder_name)
-        assert isinstance(min_index, int)
+    def export(self, folder_name: str, min_index: int=0, max_index: int=None) -> None:
        
+        file_info = self.list_files_in_folder(folder_name)
+        if max_index is None:
+            max_index = len(file_info)
+                    
         for i, file_metadata in enumerate(file_info):
             
-            # For multiprocessing. Start from certain index
-            if (min_index is not None) and (i < min_index):
-                continue
+            # For multiprocessing. Only request files between min and max index
+            if (min_index <= i < max_index):
+                
+                file_id = file_metadata['id']
+                file_name = file_metadata['name'].split('/')[-1]
+                output_path = self.output_folder / file_name
+
+                if output_path.exists():
+                    print(f"File {file_name} already exists! Skipping")
+                    continue
+                else:
+                    print(f"{multiprocessing.current_process()}: downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
+                    try:
+                        # Read file by chunks
+                        request = self.service.files().get_media(fileId=file_id)
+                        data = request.execute()
+                        if data:
+                            with open(output_path, 'wb') as f:
+                                print(f'Writing file to {output_path}')
+                                f.write(data)    
+
+                        # file = io.BytesIO()
+                        # downloader = MediaIoBaseDownload(file, request)
+                        # done = False
+                        # while done is False:
+                        #     status, done = downloader.next_chunk()
+                        #     print(F'Download {int(status.progress() * 100)}.')
+                        
+                        # # Write to file
+                        # with io.open(output_path, 'wb') as f:
+                        #     print(f'Writing file to {output_path}')
+                        #     file.seek(0)
+                        #     f.write(file.read())            
             
-            file_id = file_metadata['id']
-            file_name = file_metadata['name'].split('/')[-1]
-            output_path = self.output_folder / file_name
-
-            if output_path.exists():
-                #print(f"File {file_name} already exists! Skipping")
-                continue
+                    except HttpError as error:
+                        print(F'An error occurred: {error}')
+                        continue
             else:
-                print(f"{multiprocessing.current_process()}: downloading file {i}/{len(file_info)} {file_name} with id {file_id} from drive into {output_path}")
-                try:
-                    # Read file by chunks
-                    request = self.service.files().get_media(fileId=file_id)
-                    data = request.execute()
-                    if data:
-                        with open(output_path, 'wb') as f:
-                            #print(f'Writing file to {output_path}')
-                            f.write(data)    
-
-                    # file = io.BytesIO()
-                    # downloader = MediaIoBaseDownload(file, request)
-                    # done = False
-                    # while done is False:
-                    #     status, done = downloader.next_chunk()
-                    #     print(F'Download {int(status.progress() * 100)}.')
-                    
-                    # # Write to file
-                    # with io.open(output_path, 'wb') as f:
-                    #     print(f'Writing file to {output_path}')
-                    #     file.seek(0)
-                    #     f.write(file.read())            
-        
-                except HttpError as error:
-                    print(F'An error occurred: {error}')
-                    break
+                continue
 
     def export_with_gdown(self, file_info: List[Dict]) -> None:
 

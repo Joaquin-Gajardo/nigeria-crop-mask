@@ -58,16 +58,12 @@ def export_gdrive_nigeria():
     exporter.export()
 
 
-def export_gdrive_nigeria_S1(multiprocessing=False, min_index=None):
+def export_gdrive_nigeria_S1():
     # We need to put the credentials.json file in th output folder (get it from the google clound console). 
     # A token.json file will be generated on the same folder after authentification.
-    
     exporter = GDriveExporter(Path('/media/Elements-12TB/satellite_images/nigeria'), dataset='nigeria-full-country-2020')
-    
-    if not multiprocessing:
-        exporter.export(folder_name='test_eo_data')
-    # else:
-    #     assert isinstance(min_index, int), f'min_index must be of integer type for using multiprocessing. {min_index} was given.'
+    exporter.export(folder_name='test_eo_data')
+
 
 def cancel_tasks():
     cancel_all_tasks()
@@ -81,7 +77,7 @@ if __name__ == "__main__":
 
     #export_nigeria()
     #export_gdrive_nigeria()
-    #export_gdrive_nigeria_S1()
+    export_gdrive_nigeria_S1()
         
     ## Original ##
     #export_geowiki_sentinel_ee()
@@ -89,17 +85,27 @@ if __name__ == "__main__":
     #export_region()
     ##cancel_all_tasks()
 
-    import os
-    from multiprocessing import Pool
-    import numpy as np
+    ### Multiprocessing of export_gdrive_nigeria_S1() ###
+    # from multiprocessing import Pool
 
-    exporter = GDriveExporter(Path('/media/Elements-12TB/satellite_images/nigeria'), dataset='nigeria-full-country-2020')
+    # exporter = GDriveExporter(Path('/media/Elements-12TB/satellite_images/nigeria'), dataset='nigeria-full-country-2020')
     
-    def f(i):
-        exporter.export(folder_name='test_eo_data', min_index=i)
-        return None
+    # def f(start_stop):
+    #     exporter.export(folder_name='test_eo_data', min_index=start_stop[0], max_index=start_stop[1])
+    #     return None
 
-    workers = 20
-    with Pool(workers) as p:
-        start_indexes = [i*700 for i in range(workers)]
-        print(p.map(f, start_indexes))
+    # workers = 8
+    # start_stop_indices = [
+    #         (0, 1000),
+    #         (1000, 5500),
+    #         (5500, 8500),
+    #         (8500, 8700),
+    #         (8700, 8900),
+    #         (8900, 9150),
+    #         (9150, 9500),
+    #         (9500, 14176),
+    #     ]
+    # assert workers == len(start_stop_indices)
+
+    # with Pool(workers) as p:
+    #     print(p.map(f, start_stop_indices))
