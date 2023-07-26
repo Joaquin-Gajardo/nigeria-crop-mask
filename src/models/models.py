@@ -66,8 +66,9 @@ class LandCoverMapper(pl.LightningModule):
         all pixels. Default = True
     :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
     :param hparams.geowiki_subset: List of countries to use from geowiki. Choices=["nigeria", "neighbours1", "neighbours2", "world"]. Default = "world".
-    :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train and validate the model.
-        Default = True
+    :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train and validate the model. Default = True
+    :param hparams.train_with_val: Whether to include validation data inside training loop. Intended for final inference. Default = False.
+    :param hparams.dev: For testing on the validation set during development. If set to True we will test on the Nigeria test set. Default = True
     """
 
     def __init__(self, hparams: Namespace) -> None:
@@ -76,7 +77,7 @@ class LandCoverMapper(pl.LightningModule):
         set_seed() # NOTE: will probably have to unset if I want to do several runs
         hparams = Namespace(**hparams) if not isinstance(hparams, Namespace) else hparams
         self.hparams = hparams
-        
+
         # Dataset
         self.data_folder = Path(hparams.data_folder)
 
@@ -90,12 +91,12 @@ class LandCoverMapper(pl.LightningModule):
             else: # world
                 countries_subset = None
 
-            geowiki_dataset = GeowikiCropHarvestDataset(
+            self.geowiki_dataset = GeowikiCropHarvestDataset(
                 root=self.data_folder / "cropharvest",
                 countries_subset=countries_subset
             )
             # We make Geowiki data splits at class instanciation
-            self.geowiki_train, self.geowiki_val = geowiki_dataset.train_val_split(geowiki_dataset)
+            self.geowiki_train, self.geowiki_val = self.geowiki_dataset.train_val_split(self.geowiki_dataset)
 
         dataset_train = self.get_dataset(subset="training")
 
@@ -217,7 +218,18 @@ class LandCoverMapper(pl.LightningModule):
     def get_dataset(
         self, subset: str, normalizing_dict: Optional[Dict] = None, evaluating: bool = False
     ) -> LandTypeClassificationDataset:
+        """
+        Get split of LandTypeClassificationDataset combining Geowiki and Nigeria dataset.
+        Args:
+            - subset: dataset split to fetch.
+            - normalizing_dict: mean and standard deviation for each channel of the dataset. Mainly an option for
+            test set as we want to normalize with training and validation statistics.
+            - evaluating: a flag to allow for testing the model with the Nigeria validation set (during development).
+        """
         
+        assert subset in ["training", "validation", "testing", "trainval"], \
+            'Split must be either "training", "validation" or "testing", or "trainval" (for final inference).'
+
         # Geowiki
         geowiki_dataset = None
         if self.hparams.add_geowiki:
@@ -243,6 +255,8 @@ class LandCoverMapper(pl.LightningModule):
                 geowiki_dataset = self.geowiki_train
             elif subset == 'validation':
                 geowiki_dataset = self.geowiki_val
+            elif subset == 'trainval':
+                geowiki_dataset = self.geowiki_dataset
 
         # Nigeria
         nigeria_root_path = self.data_folder / 'features' / 'nigeria-cropharvest'
@@ -273,8 +287,12 @@ class LandCoverMapper(pl.LightningModule):
         )
 
     def train_dataloader(self):
+        subset = 'training'
+        if self.hparams.train_with_val:
+            subset = 'trainval'
+
         return DataLoader(
-            self.get_dataset(subset="training"),
+            self.get_dataset(subset=subset),
             shuffle=True,
             batch_size=self.hparams.batch_size,
             num_workers=os.cpu_count()  
@@ -292,10 +310,14 @@ class LandCoverMapper(pl.LightningModule):
         NOTE about normalizing dict:
         Same normalizing dict as in train and val dataset is passed. It's calculated from all train and val samples used.
         Additionally, if different datasets are used (geowiki, nigeria) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
-        '''  
+        ''' 
+        subset = 'testing'
+        if self.hparams.dev:
+            # during dev, this will use validation set for testing
+            subset = 'validation'
+
         return DataLoader(
-            #self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict, evaluating=True), # during dev, this will use validation set for testing
-            self.get_dataset(subset="testing", normalizing_dict=self.normalizing_dict, evaluating=True),
+            self.get_dataset(subset=subset, normalizing_dict=self.normalizing_dict, evaluating=True), # if subset='testing', evaluating has no effect
             batch_size=self.hparams.batch_size,
             num_workers=os.cpu_count()  
         )
@@ -335,10 +357,11 @@ class LandCoverMapper(pl.LightningModule):
     def test_epoch_end(self, outputs):
         avg_loss = torch.stack([x["test_loss"] for x in outputs]).mean().item()
 
+        test_subset = 'validation' if self.hparams.dev else 'testing'
         output_dict = {'final_epoch': self.current_epoch + 1, 'add_nigeria': self.hparams.add_nigeria,
                         'add_geowiki': self.hparams.add_geowiki, 'geowiki_subset': self.hparams.geowiki_subset,
                         'multi_headed': self.hparams.multi_headed, 'weighted_loss_fn': self.hparams.weighted_loss_fn,
-                        "test_loss": avg_loss}
+                        "test_loss": avg_loss, "test_on": test_subset}
         output_dict.update(self.get_interpretable_metrics(outputs, prefix="test_"))
     
         # Save results into file
@@ -346,7 +369,9 @@ class LandCoverMapper(pl.LightningModule):
             results_path = self.data_folder.resolve().parent / 'results' / self.hparams.exp_name / self.model_base_name
             results_path.mkdir(parents=True, exist_ok=True)
             file_name = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-            with open(results_path / file_name, 'w') as f:
+            file_path = results_path / file_name
+            print(f'Saving test results at {file_path}')
+            with open(file_path, 'w') as f:
                 json.dump(output_dict, f)
 
         return {"progress_bar": output_dict}
@@ -651,6 +676,12 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument("--exp_name", default='dry_runs', type=str)
         parser.add_argument("--save_results", action="store_true")
         parser.set_defaults(save_results=True)
+    
+        parser.add_argument("--train_with_val", action="store_true")
 
+        parser.add_argument("--dev", dest="dev", action="store_true")
+        parser.add_argument("--inference", dest="dev", action="store_false")
+        parser.set_defaults(dev=True)
+        
         temp_args = parser.parse_known_args()[0]
         return STR2BASE[temp_args.model_base].add_base_specific_arguments(parser)

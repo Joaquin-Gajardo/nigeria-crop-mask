@@ -76,8 +76,12 @@ class NigeriaCropHarvestDataset(BaseCropHarvestDataset):
         self.root = Path(root)
         self._labels = CropHarvestLabels(self.root).as_geojson()
         # Slice per subset
-        assert split in ["training", "validation", "testing"], 'Split must be either "training", "validation" or "testing".'
-        self.labels = self._labels[self._labels['new_set'] == split].reset_index()
+        assert split in ["training", "validation", "testing", "trainval"], \
+            'Split must be either "training", "validation" or "testing", or "trainval" (for final inference).'
+        if split == 'trainval':
+            self.labels = self._labels[(self._labels['new_set'] == 'training') | (self._labels['new_set'] == 'validation')].reset_index(drop=True)
+        else:
+            self.labels = self._labels[self._labels['new_set'] == split].reset_index(drop=True)
         self._discard_missing_files()  
         self.filepaths = self.labels['path'].tolist()
         self.y_vals = self.labels['is_crop'].tolist()
@@ -226,8 +230,10 @@ class LandTypeClassificationDataset(Dataset):
         normalizing_dict: Optional[Dict] = None,        
     ) -> None:
 
-        assert subset in ["training", "validation", "testing"]
-        self.subset_name = subset
+        assert subset in ["training", "validation", "testing", "trainval"], \
+            'Split must be either "training", "validation" or "testing", or "trainval" (for final inference).'
+        
+        #self.subset_name = subset
         self.target_country_borders = gpd.read_file(ROOT / 'assets' / 'nigeria_borders.shp') # Assumes target country is Nigeria. TODO: take from geowiki_set.countries_to_weight and natural earth countries shapefiles
 
         self.datasets: Dict[str: gpd.GeoDataFrame] = dict()
