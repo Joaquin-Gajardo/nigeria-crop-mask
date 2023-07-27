@@ -25,11 +25,16 @@ def landcover_mapper():
     data_dir = "../data/predictions/Nigeria2"
 
     #test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/cropland-GEE-data/Togo/tifs/earth_engine_region/Takeout/Drive/earth_engine_region")
-    test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/cropland-GEE-data/Nigeria/full_country/tifs/raw/gdrive")
+    #test_folder = Path("/mnt/N/dataorg-datasets/MLsatellite/cropland-GEE-data/Nigeria/full_country/tifs/raw/gdrive")
+    test_folder = Path("/media/Elements-12TB/satellite_images/nigeria/raw/nigeria-full-country-2020/")
     test_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
 
     #model_path = "lightning_logs/version_1/checkpoints/epoch=2.ckpt" # cpu example: nigeria-crop-mask env
-    model_path = "../data/lightning_logs/version_587/checkpoints/epoch=3.ckpt" # gpu example: nigeria-crop-mask-gpu env. Make sure model was run in this environment!
+    #model_path = "../data/lightning_logs/version_587/checkpoints/epoch=3.ckpt" # gpu example: nigeria-crop-mask-gpu env. Make sure model was run in this environment!
+    #model_path = "../data/lightning_logs/version_685/checkpoints/epoch=19.ckpt"
+    #model_path = "../data/lightning_logs/version_685/checkpoints/epoch=19.ckpt"
+    #model_path = "../data/lightning_logs/version_759/checkpoints/epoch=25.ckpt"
+    model_path = "../data/lightning_logs/version_867/checkpoints/epoch=19.ckpt"
 
     print(f"Using model {model_path}")
     model = LandCoverMapper.load_from_checkpoint(model_path) # BUG: problem with loading state (hparams) in GPU environment, probably due to difference in lightning (0.7.1 vs 0.8.5) --> Solved by wrapping loaded hparams dict into Namespace
@@ -109,6 +114,7 @@ def landcover_mapper():
         plt.close()
         # plt.show()
         out.to_netcdf(save_dir / f"preds_{test_path.name}.nc")
+        break
 
 
 if __name__ == "__main__":
