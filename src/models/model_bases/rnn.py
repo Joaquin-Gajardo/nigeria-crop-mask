@@ -7,6 +7,63 @@ from torch import nn
 
 from typing import Dict, Tuple, Type, Any, Optional, Union
 
+class GRU(pl.LightningModule):
+    r"""
+    A GRU base
+
+    hparams
+    --------
+    The default values for these parameters are set in add_base_specific_args
+
+    :params hparams.num_layers: The number of GRU layers to use. Default = 1
+    :params hparams.dropout: The GRU dropout to use. If hparams.num_layers ==1, this
+        dropout is applied between timesteps. Otherwise, it is applied between layers.
+        Default = 0
+    """
+
+    def __init__(self, input_size: int, hparams: Namespace) -> None:
+        super().__init__()
+
+        self.hparams = hparams
+
+        if (hparams.num_rnn_layers > 1) or (hparams.rnn_dropout == 0):
+            # if we can, use the default LSTM implementation
+            self.gru = nn.GRU(
+                input_size=input_size,
+                hidden_size=hparams.hidden_vector_size,
+                dropout=hparams.rnn_dropout,
+                batch_first=True,
+                num_layers=hparams.num_rnn_layers,
+            )
+        else:
+            raise NotImplementedError
+            # # if the LSTM is only one layer,
+            # # we will apply dropout between timesteps
+            # # instead of between layers
+            # self.lstm = UnrolledLSTM(
+            #     input_size=input_size,
+            #     hidden_size=hparams.hidden_vector_size,
+            #     dropout=hparams.rnn_dropout,
+            #     batch_first=True,
+            # )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        output, hn = self.gru(x)
+        return hn[-1, :, :]
+
+    @staticmethod
+    def add_base_specific_arguments(parent_parser: ArgumentParser) -> ArgumentParser:
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+
+        parser_args: Dict[str, Tuple[Type, Any]] = {
+            "--num_rnn_layers": (int, 1),
+            "--rnn_dropout": (float, 0.2),
+        }
+
+        for key, vals in parser_args.items():
+            parser.add_argument(key, type=vals[0], default=vals[1])
+
+        return parser
 
 class LSTM(pl.LightningModule):
     r"""
@@ -27,14 +84,14 @@ class LSTM(pl.LightningModule):
 
         self.hparmas = hparams
 
-        if (hparams.num_lstm_layers > 1) or (hparams.lstm_dropout == 0):
+        if (hparams.num_rnn_layers > 1) or (hparams.rnn_dropout == 0):
             # if we can, use the default LSTM implementation
             self.lstm: Union[nn.LSTM, UnrolledLSTM] = nn.LSTM(
                 input_size=input_size,
                 hidden_size=hparams.hidden_vector_size,
-                dropout=hparams.lstm_dropout,
+                dropout=hparams.rnn_dropout,
                 batch_first=True,
-                num_layers=hparams.num_lstm_layers,
+                num_layers=hparams.num_rnn_layers,
             )
         else:
             # if the LSTM is only one layer,
@@ -43,7 +100,7 @@ class LSTM(pl.LightningModule):
             self.lstm = UnrolledLSTM(
                 input_size=input_size,
                 hidden_size=hparams.hidden_vector_size,
-                dropout=hparams.lstm_dropout,
+                dropout=hparams.rnn_dropout,
                 batch_first=True,
             )
 
@@ -56,8 +113,8 @@ class LSTM(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
 
         parser_args: Dict[str, Tuple[Type, Any]] = {
-            "--num_lstm_layers": (int, 1),
-            "--lstm_dropout": (float, 0.2),
+            "--num_rnn_layers": (int, 1),
+            "--rnn_dropout": (float, 0.2),
         }
 
         for key, vals in parser_args.items():
