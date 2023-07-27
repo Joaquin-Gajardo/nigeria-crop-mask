@@ -59,7 +59,7 @@ def main(exp_name: str='final', model_name: str='lstm'):
 
     # Reordering columns and rows
     col = df.pop('final_epoch')
-    df.insert(5, col.name, col)
+    df.insert(6, col.name, col)
 
     df['result_timestamp'] = df['result_filepath'].apply(lambda p: p.stem)
     df = df.sort_values('result_timestamp').reset_index(drop=True)

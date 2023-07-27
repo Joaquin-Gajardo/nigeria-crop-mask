@@ -67,8 +67,8 @@ class LandCoverMapper(pl.LightningModule):
     :param hparams.weighted_loss_fn: Whether or not to use weighted loss function (by class weights). Default = False
     :param hparams.geowiki_subset: List of countries to use from geowiki. Choices=["nigeria", "neighbours1", "neighbours2", "world"]. Default = "world".
     :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train and validate the model. Default = True
-    :param hparams.train_with_val: Whether to include validation data inside training loop. Intended for final inference. Default = False.
-    :param hparams.dev: For testing on the validation set during development. If set to True we will test on the Nigeria test set. Default = True
+    :param hparams.inference: For using the hold-out testing split for evaluating the model. If set to True we will test on the Nigeria test set. Default = False
+    :param hparams.train_with_val: Whether to concatenate validation data for training. Intended for final inference. Default = False.
     """
 
     def __init__(self, hparams: Namespace) -> None:
@@ -287,22 +287,21 @@ class LandCoverMapper(pl.LightningModule):
         )
 
     def train_dataloader(self):
-        subset = 'training'
-        if self.hparams.train_with_val:
-            subset = 'trainval'
+
+        subset = 'training' if not self.hparams.train_with_val else 'trainval'
 
         return DataLoader(
             self.get_dataset(subset=subset),
             shuffle=True,
             batch_size=self.hparams.batch_size,
-            num_workers=os.cpu_count()  
+            num_workers=os.cpu_count() - 1
         )                                           
 
     def val_dataloader(self):
         return DataLoader(
             self.get_dataset(subset="validation", normalizing_dict=self.normalizing_dict),
             batch_size=self.hparams.batch_size,
-            num_workers=os.cpu_count()  
+            num_workers=os.cpu_count() - 1 
         )
 
     def test_dataloader(self):
@@ -311,15 +310,14 @@ class LandCoverMapper(pl.LightningModule):
         Same normalizing dict as in train and val dataset is passed. It's calculated from all train and val samples used.
         Additionally, if different datasets are used (geowiki, nigeria) the normalization values are averaged in terms of the ammount of samples (see adjust_normalizing_dict).
         ''' 
-        subset = 'testing'
-        if self.hparams.dev:
-            # during dev, this will use validation set for testing
-            subset = 'validation'
+
+        # We use validation set during development
+        subset = 'testing' if self.hparams.inference else 'validation'
 
         return DataLoader(
             self.get_dataset(subset=subset, normalizing_dict=self.normalizing_dict, evaluating=True), # if subset='testing', evaluating has no effect
             batch_size=self.hparams.batch_size,
-            num_workers=os.cpu_count()  
+            num_workers=os.cpu_count() - 1
         )
 
     def configure_optimizers(self):
@@ -357,11 +355,12 @@ class LandCoverMapper(pl.LightningModule):
     def test_epoch_end(self, outputs):
         avg_loss = torch.stack([x["test_loss"] for x in outputs]).mean().item()
 
-        test_subset = 'validation' if self.hparams.dev else 'testing'
+        test_subset = 'testing' if self.hparams.inference else 'validation'
         output_dict = {'final_epoch': self.current_epoch + 1, 'add_nigeria': self.hparams.add_nigeria,
                         'add_geowiki': self.hparams.add_geowiki, 'geowiki_subset': self.hparams.geowiki_subset,
                         'multi_headed': self.hparams.multi_headed, 'weighted_loss_fn': self.hparams.weighted_loss_fn,
-                        "test_loss": avg_loss, "test_on": test_subset}
+                        "hidden_vector_size": self.hparams.hidden_vector_size, "num_rnn_layers": self.hparams.num_rnn_layers,
+                        "test_on": test_subset, "test_loss": avg_loss}
         output_dict.update(self.get_interpretable_metrics(outputs, prefix="test_"))
     
         # Save results into file
@@ -676,12 +675,10 @@ class LandCoverMapper(pl.LightningModule):
         parser.add_argument("--exp_name", default='dry_runs', type=str)
         parser.add_argument("--save_results", action="store_true")
         parser.set_defaults(save_results=True)
-    
-        parser.add_argument("--train_with_val", action="store_true")
 
-        parser.add_argument("--dev", dest="dev", action="store_true")
-        parser.add_argument("--inference", dest="dev", action="store_false")
-        parser.set_defaults(dev=True)
+        # Hack to allow for literal bool argument in bash script to run experiments        
+        parser.add_argument("--inference", default=False, type= lambda x: str(x) == 'True')
+        parser.add_argument("--train_with_val", default=False, type= lambda x: str(x) == 'True')
         
         temp_args = parser.parse_known_args()[0]
         return STR2BASE[temp_args.model_base].add_base_specific_arguments(parser)
