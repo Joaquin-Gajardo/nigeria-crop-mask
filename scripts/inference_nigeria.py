@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import sys
 from datetime import date
+import multiprocessing
 
 from cropharvest.inference import Inference
 
@@ -10,7 +11,7 @@ sys.path.append('..')
 from src.models import LandCoverMapper
 
 
-def main(start_stop):
+def main(start_stop=(None, None)):
     start, stop = start_stop
 
     test_folder = Path("/media/Elements-12TB/satellite_images/nigeria/raw/nigeria-full-country-2020")
@@ -35,24 +36,30 @@ def main(start_stop):
 
     inferer = Inference(model=model, normalizing_dict=None, batch_size=8192)
 
-    skips_filename = 'skipped_files.txt'
-    warnings_filename = 'warning_files.txt'
+    skips_filename = 'skipped_files2.txt'
+    warnings_filename = 'warning_files2.txt'
 
     for i, path in enumerate(test_files):
         
         if (start <= i < stop):
-            print(f'Predicting on file {path}')
-            try:
-                preds = inferer.run(path, dest_path=preds_dir / f"preds_{path.name}.nc")
 
-                if preds.min() <= 0 or preds.max() >= 1:
-                    Warning(f'preds for file {path.name} are not between 0 and 1!')
-                    os.system(f'echo {str(path)} >> {str(preds_dir / warnings_filename)}')
-            
-            except RuntimeError as e:
-                print('Encounter the following error, skipping!: ', e)
-                os.system(f'echo {str(path)} >> {str(preds_dir / skips_filename)}')
-                continue
+            dest_path = preds_dir / f"preds_{path.name}.nc"
+
+            if dest_path.exists():
+                print(f'{multiprocessing.current_process()}: file {dest_path} exists, skipping!')
+            else:
+                print(f'{multiprocessing.current_process()}: predicting on file {path}')
+                try:
+                    preds = inferer.run(path, dest_path=dest_path)
+
+                    if preds.min() < 0 or preds.max() > 1:
+                        Warning(f'preds for file {path.name} are not between 0 and 1!')
+                        os.system(f'echo {str(path)} >> {str(preds_dir / warnings_filename)}')
+                
+                except RuntimeError as e:
+                    print('Encounter the following error, skipping!: ', e)
+                    os.system(f'echo {str(path)} >> {str(preds_dir / skips_filename)}')
+                    continue
         else:
             continue
 
@@ -69,6 +76,7 @@ if __name__ == '__main__':
     starts = list(range(0, 14000, 710))
     stops = list(range(710, 14201, 710))
     start_stop_indices = list(zip(starts, stops))
+    print(start_stop_indices)
     assert workers == len(start_stop_indices)
 
     with Pool(workers) as p:
