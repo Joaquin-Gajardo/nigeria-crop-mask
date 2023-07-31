@@ -20,8 +20,24 @@ def main(start_stop=(None, None)):
 
     preds_dir.mkdir(exist_ok=True, parents=True)
 
-    test_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
+    raw_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
+    pred_files = list(preds_dir.glob('*.nc'))
+
+    raw_files_indices = [path.stem.split('_')[0] for path in raw_files]
+    pred_files_indices = [path.stem.split('_')[1] for path in pred_files]
+
+    missing_files = list(set(raw_files_indices) - set(pred_files_indices))
+
+    file_ending = raw_files[0].suffix
+    date = raw_files[0].stem.split('_')[-1]
+
+    missing_preds_paths = [test_folder / f'{identifier}_{date}{file_ending}' for identifier in missing_files]
     
+    # print(missing_preds_paths)
+    # print(missing_preds_paths[0].exists())
+    # print(len(missing_preds_paths))
+
+
     ## Need to include start_date on the tif filenames otherwise Inference.run complains. Do it only once.
     # start_date = date(2019, 4, 3).strftime('%Y-%m-%d')
     # for path in test_files:
@@ -30,7 +46,7 @@ def main(start_stop=(None, None)):
     #     path.replace(new_path)
     # test_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
 
-    assert all([file.exists() for file in test_files])
+    #assert all([file.exists() for file in test_files])
 
     model = LandCoverMapper.load_from_checkpoint(model_path)
 
@@ -39,7 +55,7 @@ def main(start_stop=(None, None)):
     skips_filename = 'skipped_files2.txt'
     warnings_filename = 'warning_files2.txt'
 
-    for i, path in enumerate(test_files):
+    for i, path in enumerate(missing_preds_paths):
         
         if (start <= i < stop):
 
@@ -72,9 +88,9 @@ if __name__ == '__main__':
 
     from multiprocessing import Pool
 
-    workers = 20
-    starts = list(range(0, 14000, 710))
-    stops = list(range(710, 14201, 710))
+    workers = 10
+    starts = list(range(0, 7000, 700))
+    stops = list(range(700, 7700, 700))
     start_stop_indices = list(zip(starts, stops))
     print(start_stop_indices)
     assert workers == len(start_stop_indices)
