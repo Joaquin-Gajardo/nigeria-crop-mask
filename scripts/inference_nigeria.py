@@ -11,11 +11,11 @@ sys.path.append('..')
 from src.models import LandCoverMapper
 
 
-def main(start_stop=(None, None)):
+def main(start_stop=(0, None)):
     start, stop = start_stop
 
-    test_folder = Path("/media/Elements-12TB/satellite_images/nigeria/raw/nigeria-full-country-2020")
-    preds_dir = Path("/media/Elements-12TB/satellite_images/nigeria/predictions/nigeria-full-country-2020")
+    test_folder = Path("/run/media/jgajardo/Elements/satellite_images/nigeria/raw/nigeria-full-country-2020")
+    preds_dir = Path("/run/media/jgajardo/Elements/satellite_images/nigeria/predictions/nigeria-full-country-2020")
     model_path = "../data/lightning_logs/version_893/checkpoints/epoch=25.ckpt" # obtained with python models.py --max_epochs 35 --train_with_val True --inference True --geowiki_subset neighbours1
 
     preds_dir.mkdir(exist_ok=True, parents=True)
@@ -23,6 +23,16 @@ def main(start_stop=(None, None)):
     raw_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
     pred_files = list(preds_dir.glob('*.nc'))
 
+    ## Need to include start_date on the tif filenames otherwise Inference.run complains. Do it only once.
+    # start_date = date(2019, 4, 3).strftime('%Y-%m-%d')
+    # for path in raw_files:
+    #     new_filename = f'{path.stem}_{start_date}{path.suffix}'
+    #     new_path = path.parent / new_filename
+    #     path.replace(new_path)
+    # raw_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
+
+    #assert all([file.exists() for file in raw_files])
+    
     raw_files_indices = [path.stem.split('_')[0] for path in raw_files]
     pred_files_indices = [path.stem.split('_')[1] for path in pred_files]
 
@@ -33,28 +43,14 @@ def main(start_stop=(None, None)):
 
     missing_preds_paths = [test_folder / f'{identifier}_{date}{file_ending}' for identifier in missing_files]
     
-    # print(missing_preds_paths)
-    # print(missing_preds_paths[0].exists())
-    # print(len(missing_preds_paths))
-
-
-    ## Need to include start_date on the tif filenames otherwise Inference.run complains. Do it only once.
-    # start_date = date(2019, 4, 3).strftime('%Y-%m-%d')
-    # for path in test_files:
-    #     new_filename = f'{path.stem}_{start_date}{path.suffix}'
-    #     new_path = path.parent / new_filename
-    #     path.replace(new_path)
-    # test_files = sorted(test_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
-
-    #assert all([file.exists() for file in test_files])
-
-    model = LandCoverMapper.load_from_checkpoint(model_path)
+    model = LandCoverMapper.load_from_checkpoint(model_path, data_folder='../data')
 
     inferer = Inference(model=model, normalizing_dict=None, batch_size=8192)
 
-    skips_filename = 'skipped_files2.txt'
-    warnings_filename = 'warning_files2.txt'
+    skips_filename = 'skipped_files.txt'
+    warnings_filename = 'warning_files.txt'
 
+    stop = len(missing_preds_paths) if stop is None else stop
     for i, path in enumerate(missing_preds_paths):
         
         if (start <= i < stop):
@@ -82,19 +78,19 @@ def main(start_stop=(None, None)):
 
 if __name__ == '__main__':
     
-    #main()
+    main()
 
     ### Multiprocessing for predictions ###
 
-    from multiprocessing import Pool
+    # from multiprocessing import Pool
 
-    workers = 10
-    starts = list(range(0, 7000, 700))
-    stops = list(range(700, 7700, 700))
-    start_stop_indices = list(zip(starts, stops))
-    print(start_stop_indices)
-    assert workers == len(start_stop_indices)
+    # workers = 7
+    # starts = list(range(0, 700, 100))
+    # stops = list(range(100, 800, 100))
+    # start_stop_indices = list(zip(starts, stops))
+    # print(start_stop_indices)
+    # assert workers == len(start_stop_indices)
 
-    with Pool(workers) as p:
-        print(p.map(main, start_stop_indices))
+    # with Pool(workers) as p:
+    #     print(p.map(main, start_stop_indices))
 
