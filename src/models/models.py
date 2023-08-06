@@ -69,6 +69,7 @@ class LandCoverMapper(pl.LightningModule):
     :param hparams.add_nigeria: Whether or not to use the Nigeria dataset to train and validate the model. Default = True
     :param hparams.inference: For using the hold-out testing split for evaluating the model. If set to True we will test on the Nigeria test set. Default = False
     :param hparams.train_with_val: Whether to concatenate validation data for training. Intended for final inference. Default = False.
+    :param hparams.S2_features_only: Whether to use only S2 bands + NDVI. Default = False.
     """
 
     def __init__(self, hparams: Namespace) -> None:
@@ -284,6 +285,7 @@ class LandCoverMapper(pl.LightningModule):
             geowiki_dataset=geowiki_dataset,
             nigeria_dataset=nigeria_dataset,
             normalizing_dict=normalizing_dict,
+            S2_features_only=self.hparams.S2_features_only,
         )
 
     def train_dataloader(self):
@@ -360,7 +362,7 @@ class LandCoverMapper(pl.LightningModule):
                         'add_geowiki': self.hparams.add_geowiki, 'geowiki_subset': self.hparams.geowiki_subset,
                         'multi_headed': self.hparams.multi_headed, 'weighted_loss_fn': self.hparams.weighted_loss_fn,
                         "hidden_vector_size": self.hparams.hidden_vector_size, "num_rnn_layers": self.hparams.num_rnn_layers,
-                        "test_on": test_subset, "test_loss": avg_loss}
+                        "test_on": test_subset, "log_dir": self.logger.log_dir, "test_loss": avg_loss}
         output_dict.update(self.get_interpretable_metrics(outputs, prefix="test_"))
     
         # Save results into file
@@ -373,6 +375,8 @@ class LandCoverMapper(pl.LightningModule):
             with open(file_path, 'w') as f:
                 json.dump(output_dict, f)
 
+        self.save_validation_predictions()
+
         return {"progress_bar": output_dict}
 
     def save_validation_predictions(self) -> None:
@@ -381,17 +385,18 @@ class LandCoverMapper(pl.LightningModule):
         to find an appropriate threshold.
         """
         save_dir = (
-            Path(self.hparams.data_folder) / self.__class__.__name__ / "validation"
+            #Path(self.hparams.data_folder) / self.__class__.__name__ / "testing"
+            Path(self.hparams.data_folder) / self.logger.log_dir / "testing"
         )
         save_dir.mkdir(exist_ok=True, parents=True)
 
-        val_dl = self.val_dataloader()
+        test_dl = self.test_dataloader()
 
         outputs: List[Dict] = []
-        for idx, batch in enumerate(val_dl):
+        for idx, batch in enumerate(test_dl):
 
             with torch.no_grad():
-                outputs.append(self.validation_step(batch, idx))
+                outputs.append(self.test_step(batch, idx))
 
         all_preds = (torch.cat([x["pred"] for x in outputs]).detach().cpu().numpy(),)
         all_labels = (torch.cat([x["label"] for x in outputs]).detach().cpu().numpy(),)
@@ -679,6 +684,7 @@ class LandCoverMapper(pl.LightningModule):
         # Hack to allow for literal bool argument in bash script to run experiments        
         parser.add_argument("--inference", default=False, type= lambda x: str(x) == 'True')
         parser.add_argument("--train_with_val", default=False, type= lambda x: str(x) == 'True')
+        parser.add_argument("--S2_features_only", default=False, type= lambda x: str(x) == 'True')
         
         temp_args = parser.parse_known_args()[0]
         return STR2BASE[temp_args.model_base].add_base_specific_arguments(parser)

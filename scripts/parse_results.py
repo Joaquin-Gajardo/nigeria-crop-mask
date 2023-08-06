@@ -64,7 +64,7 @@ def main(exp_name: str='final', model_name: str='lstm'):
     df['result_timestamp'] = df['result_filepath'].apply(lambda p: p.stem)
     df = df.sort_values('result_timestamp').reset_index(drop=True)
 
-    df.to_csv(path / f'results_{exp_name}_{model_name}.csv')
+    df.to_csv(path / f'results_{exp_name}_{model_name}.csv', index=False)
 
     return df
 

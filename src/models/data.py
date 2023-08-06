@@ -227,13 +227,17 @@ class LandTypeClassificationDataset(Dataset):
         evaluating: bool = False,
         geowiki_dataset: Optional[GeowikiCropHarvestDataset] = None,
         nigeria_dataset: Optional[GeowikiCropHarvestDataset] = None,
-        normalizing_dict: Optional[Dict] = None,        
+        normalizing_dict: Optional[Dict] = None,
+        S2_features_only: bool = False,        
     ) -> None:
 
         assert subset in ["training", "validation", "testing", "trainval"], \
             'Split must be either "training", "validation" or "testing", or "trainval" (for final inference).'
-        
-        #self.subset_name = subset
+        self.subset_name = subset
+        self.S2_features_only = S2_features_only
+        if self.S2_features_only:
+            self.band_indices = [BANDS.index(band) for band in S2_BANDS]
+                
         self.target_country_borders = gpd.read_file(ROOT / 'assets' / 'nigeria_borders.shp') # Assumes target country is Nigeria. TODO: take from geowiki_set.countries_to_weight and natural earth countries shapefiles
 
         self.datasets: Dict[str: gpd.GeoDataFrame] = dict()
@@ -340,11 +344,13 @@ class LandTypeClassificationDataset(Dataset):
         if self.target_country_borders.contains(point).bool():
             weight = 1
 
-        return (
-            torch.from_numpy(self._normalize(target_file.get("array")[:])).float(),
-            torch.tensor(self.y_vals[index]).float(),
-            torch.tensor(weight).long(),
-        )
+        data = torch.from_numpy(self._normalize(target_file.get("array")[:])).float()
+        if self.S2_features_only:
+            data = data[:, self.band_indices]
+        label = torch.tensor(self.y_vals[index]).float()
+        weight = torch.tensor(weight).long()
+        
+        return data, label, weight
 
     @staticmethod
     def adjust_normalizing_dict(
