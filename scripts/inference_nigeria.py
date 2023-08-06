@@ -15,13 +15,14 @@ def main(start_stop=(0, None)):
     start, stop = start_stop
 
     dataset_name = 'nigeria-cropharvest-full-country-2020'
-    map_version = 1
+    map_version = 2
     raw_folder = Path(f"/media/Elements/satellite_images/nigeria/raw/{dataset_name}")
     preds_dir = Path(f"../data/predictions/{dataset_name}/v{map_version}/nc_files")
     preds_dir.mkdir(exist_ok=True, parents=True)
 
     #model_path = "../data/lightning_logs/version_893/checkpoints/epoch=25.ckpt" # obtained with python models.py --max_epochs 35 --train_with_val True --inference True --geowiki_subset neighbours1
     model_path = '../data/lightning_logs/version_896/checkpoints/epoch=21.ckpt' # obtained with python models.py --geowiki_subset neighbours1 --weighted_loss_fn --inference True
+    model_path = '../data/lightning_logs/version_899/checkpoints/epoch=21.ckpt' # obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was geowiki_subset neighbours1 --weighted_loss_fn --inference True
 
     raw_files = sorted(raw_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
     pred_files = list(preds_dir.glob('*.nc'))
@@ -48,7 +49,9 @@ def main(start_stop=(0, None)):
     missing_preds_paths = sorted(missing_preds_paths, key=lambda x:int(x.stem.split('-')[0]))
     
     model = LandCoverMapper.load_from_checkpoint(model_path, data_folder='../data')
-
+    if model.training:
+        model.eval()
+    assert not model.training, 'Need to put model in eval mode, else will have problems with dropout'
     inferer = Inference(model=model, normalizing_dict=None, batch_size=8192)
 
     skips_filename = 'skipped_files.txt'
