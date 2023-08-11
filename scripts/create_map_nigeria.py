@@ -4,7 +4,7 @@ and then merge them into a single .tif file. Then it will create both a binary m
 and a cropland probability. Both output maps will be compressed, clipped to Nigeria,
 stored as uint8 data type.
 
-Hardware requirements: about 120GB of RAM and 64GB of free disk space (for intermediate files). Final output is about 5GB.
+Hardware requirements: about 150GB of RAM and 64GB of free disk space (for intermediate files). Final output is about 5GB.
 
 Code largely taken from https://github.com/nasaharvest/openmapflow/blob/main/openmapflow/notebooks/create_map.ipynb
 """
@@ -72,6 +72,7 @@ def create_individual_map(input_tif_path: Path, output_tif_path: Path, borders_g
     print(f'Creating {map_type} map ...')
     tmp_tif_path = Path(str(output_tif_path).replace('_clipped.tif', '.tif'))
     
+    # Create intermediate file (change dtype and compress)
     if not tmp_tif_path.exists(): 
         # Read raw tif into memory
         print('Reading raw data into memory ...')
@@ -107,13 +108,17 @@ def create_individual_map(input_tif_path: Path, output_tif_path: Path, borders_g
 
     # Save final file to disk
     print(f'Saving final file {output_tif_path.name} to disk ...')
-    data = np.squeeze(data)
-    meta.update({'transform': transform, 'compress': COMPRESSION})
+    data = np.squeeze(data) # seems to save space in the final tif
+    meta.update({"height": data.shape[0],
+                "width": data.shape[1],
+                "transform": transform,
+                "compress": COMPRESSION})
+    
     with rasterio.open(output_tif_path, "w", **meta) as dst:
         dst.write(data, 1)
 
     # Remove intermediate tif file from disk
-    os.remove(str(tmp_tif_path))
+    #os.remove(str(tmp_tif_path))
 
 
 def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
@@ -143,9 +148,9 @@ def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
     
     # Remove raw tif from disk and vrt files
     os.remove(str(raw_tif_path))
-    os.remove(str(raw_tif_path).replace('.tif', '.vrt'))
     os.remove(str(raw_tif_path).replace('.tif', '.tif.aux.xml'))
-    os.system(f'rm -r {str(preds_dir / "vrt_files")}')
+    #os.remove(str(raw_tif_path).replace('.tif', '.vrt'))
+    #os.system(f'rm -r {str(preds_dir / "vrt_files")}')
 
 
 def main(version: str) -> None:
