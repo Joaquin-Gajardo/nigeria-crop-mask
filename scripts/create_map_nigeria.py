@@ -147,8 +147,8 @@ def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
             create_individual_map(raw_tif_path, target_tif_path, borders_geometry, map_type)
     
     # Remove raw tif from disk and vrt files
-    os.remove(str(raw_tif_path))
-    os.remove(str(raw_tif_path).replace('.tif', '.tif.aux.xml'))
+    #os.remove(str(raw_tif_path))
+    #os.remove(str(raw_tif_path).replace('.tif', '.tif.aux.xml'))
     #os.remove(str(raw_tif_path).replace('.tif', '.vrt'))
     #os.system(f'rm -r {str(preds_dir / "vrt_files")}')
 

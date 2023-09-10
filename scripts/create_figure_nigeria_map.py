@@ -94,7 +94,7 @@ if __name__ == '__main__':
     # Parse command line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", type=int, default=2, help="Map version number, e.g. 0, 1 or 2")
-    parser.add_argument("--map_type", type=str, default='binary', choices=['binary', 'probability'], help="Map type, either 'binary' or 'probability'")
+    parser.add_argument("--map_type", type=str, default='binary', choices=['binary', 'probability', 'both'], help="Map type, either 'binary', 'probability', or 'both'")
     args = parser.parse_args()
 
     if args.map_type == 'both':
