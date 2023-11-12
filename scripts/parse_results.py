@@ -1,6 +1,6 @@
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import pandas as pd
 
@@ -54,8 +54,10 @@ def main(exp_name: str='final', model_name: str='lstm'):
     ]
 
     for good_column, bad_column in zip(columns_to_modify, columns_to_remove):
-        df[good_column].fillna(df[bad_column], inplace=True)
-        del df[bad_column]
+        if bad_column in df.columns:
+            df.rename(columns={bad_column: good_column}, inplace=True)
+            df[good_column].fillna(df[bad_column], inplace=True)
+            del df[bad_column]
 
     # Reordering columns and rows
     col = df.pop('final_epoch')
