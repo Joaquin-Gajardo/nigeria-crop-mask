@@ -1,8 +1,8 @@
+import multiprocessing
 import os
-from pathlib import Path
 import sys
 from datetime import date
-import multiprocessing
+from pathlib import Path
 
 from cropharvest.inference import Inference
 
@@ -20,11 +20,12 @@ def main(start_stop=(0, None)):
     preds_dir = Path(f"../data/predictions/{dataset_name}/v{map_version}/nc_files")
     preds_dir.mkdir(exist_ok=True, parents=True)
 
-    #model_path = "../data/lightning_logs/version_893/checkpoints/epoch=25.ckpt" # obtained with python models.py --max_epochs 35 --train_with_val True --inference True --geowiki_subset neighbours1
-    model_path = '../data/lightning_logs/version_896/checkpoints/epoch=21.ckpt' # obtained with python models.py --geowiki_subset neighbours1 --weighted_loss_fn --inference True
-    model_path = '../data/lightning_logs/version_896/checkpoints/epoch=21.ckpt' # obtained with python models.py --geowiki_subset neighbours1 --weighted_loss_fn --inference True
-    model_path = '../data/lightning_logs/version_949/checkpoints/epoch=22.ckpt' # obtained from the best results of bash run_experiments.sh final2 lstm 64 1 0.2 2 100 False True, which was geowiki_subset Nigeria --weighted_loss_fn --inference True
+    #model_path = "../data/lightning_logs/version_893/checkpoints/epoch=25.ckpt" # Map version 0. Model obtained with python models.py --max_epochs 35 --train_with_val True --inference True --geowiki_subset neighbours1
+    #model_path = '../data/lightning_logs/version_896/checkpoints/epoch=21.ckpt' # Map version 1. Model obtained with python models.py --geowiki_subset neighbours1 --weighted_loss_fn --inference True
+    #model_path = '../data/lightning_logs/version_899/checkpoints/epoch=21.ckpt' # Map version 2. Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was --geowiki_subset neighbours1 --weighted_loss_fn --inference True
+    model_path = '../data/lightning_logs/version_949/checkpoints/epoch=22.ckpt' # Map version 3. Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was geowiki_subset nigeria --weighted_loss_fn --inference True
 
+    
     raw_files = sorted(raw_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
     pred_files = list(preds_dir.glob('*.nc'))
 
