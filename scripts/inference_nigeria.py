@@ -15,7 +15,7 @@ def main(start_stop=(0, None)):
     start, stop = start_stop
 
     dataset_name = 'nigeria-cropharvest-full-country-2020'
-    map_version = 3
+    map_version = 4
     raw_folder = Path(f"/media/Elements/satellite_images/nigeria/raw/{dataset_name}")
     preds_dir = Path(f"../data/predictions/{dataset_name}/v{map_version}/nc_files")
     preds_dir.mkdir(exist_ok=True, parents=True)
@@ -23,7 +23,8 @@ def main(start_stop=(0, None)):
     #model_path = "../data/lightning_logs/version_893/checkpoints/epoch=25.ckpt" # Map version 0. Model obtained with python models.py --max_epochs 35 --train_with_val True --inference True --geowiki_subset neighbours1
     #model_path = '../data/lightning_logs/version_896/checkpoints/epoch=21.ckpt' # Map version 1. Model obtained with python models.py --geowiki_subset neighbours1 --weighted_loss_fn --inference True
     #model_path = '../data/lightning_logs/version_899/checkpoints/epoch=21.ckpt' # Map version 2. Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was --geowiki_subset neighbours1 --weighted_loss_fn --inference True
-    model_path = '../data/lightning_logs/version_949/checkpoints/epoch=22.ckpt' # Map version 3. Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was geowiki_subset nigeria --weighted_loss_fn --inference True
+    #model_path = '../data/lightning_logs/version_949/checkpoints/epoch=22.ckpt' # Map version 3. Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was geowiki_subset nigeria --weighted_loss_fn --inference True
+    model_path = '../data/lightning_logs/version_949/checkpoints/epoch=22.ckpt' # Map version 4 (normalization as with test set). Model obtained from the best results of bash run_experiments.sh final lstm 64 1 0.2 2 100 False True, which was geowiki_subset nigeria --weighted_loss_fn --inference True
 
     
     raw_files = sorted(raw_folder.glob("*.tif"), key=lambda x:int(x.stem.split('-')[0]))
@@ -54,7 +55,7 @@ def main(start_stop=(0, None)):
     if model.training:
         model.eval()
     assert not model.training, 'Need to put model in eval mode, else will have problems with dropout'
-    inferer = Inference(model=model, normalizing_dict=None, batch_size=8192)
+    inferer = Inference(model=model, normalizing_dict=model.normalizing_dict, batch_size=8192)
 
     skips_filename = 'skipped_files.txt'
     warnings_filename = 'warning_files.txt'
