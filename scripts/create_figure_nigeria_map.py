@@ -1,16 +1,16 @@
-import sys
 import argparse
+import sys
 from pathlib import Path
 
-import numpy as np
+import geopandas as gpd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, BoundaryNorm
+import numpy as np
+import rasterio
+from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib.patches import Patch
 from matplotlib_scalebar.scalebar import ScaleBar
-import rasterio
 from rasterio.plot import show
-import geopandas as gpd
 
 sys.path.append('..')
 
@@ -93,7 +93,7 @@ def main(version: int, map_type: str = 'binary') -> None:
     plt.minorticks_on()
 
     print(f'Saving figure to disk ...')
-    plt.savefig(str(tif_path).replace('.tif', '_new.pdf'), dpi=300)  # TODO: save as pdf instead
+    plt.savefig(str(tif_path).replace('.tif', '_states.pdf'), dpi=300)  # TODO: save as pdf instead
 
 
 if __name__ == '__main__':
