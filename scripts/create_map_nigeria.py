@@ -1,29 +1,29 @@
 """
 This script will generate an create a vrt file for each nc file in the predictions directory
 and then merge them into a single .tif file. Then it will create both a binary map
-and a cropland probability. Both output maps will be compressed, clipped to Nigeria,
+and a cropland probability. Both output maps will be compressed, clipped to Nigeria, and
 stored as uint8 data type.
 
 Hardware requirements: about 150GB of RAM and 64GB of free disk space (for intermediate files). Final output is about 5GB.
 
-Code largely taken from https://github.com/nasaharvest/openmapflow/blob/main/openmapflow/notebooks/create_map.ipynb
+Code largely based on https://github.com/nasaharvest/openmapflow/blob/main/openmapflow/notebooks/create_map.ipynb
 """
 
 import os
 import sys
 from pathlib import Path
 
-import numpy as np
 import geopandas as gpd
+import numpy as np
 import rasterio
 from rasterio.mask import mask
 from tqdm import tqdm
 
-
+MAP_TYPES = ['binary', 'probability']
 DTYPE = rasterio.uint8
 NODATA_VALUE = 255 
 COMPRESSION = 'lzw'
-MAP_TYPES = ['binary', 'probability']
+REMOVE_FILES = True
 
 
 def build_vrt(preds_dir: Path, filename: str = 'combined') -> None:
@@ -67,10 +67,10 @@ def build_raw_tif(preds_dir: Path, filename: str = 'combined') -> Path:
 
 def create_individual_map(input_tif_path: Path, output_tif_path: Path, borders_geometry, map_type: str) -> None:
     assert input_tif_path.exists(), f'{input_tif_path} does not exist!'
-    assert map_type in ['binary', 'probability'], f'Invalid map type {map_type}. Must be one of ["binary", "probability"]'
+    assert map_type in ['binary', 'probability'], f'Invalid map type {map_type}. Must be a valid map type: {MAP_TYPES}.'
     
     print(f'Creating {map_type} map ...')
-    tmp_tif_path = Path(str(output_tif_path).replace('_clipped.tif', '.tif'))
+    tmp_tif_path = Path(str(output_tif_path).replace(f'_clipped_{COMPRESSION}.tif', '.tif'))
     
     # Create intermediate file (change dtype and compress)
     if not tmp_tif_path.exists(): 
@@ -90,13 +90,13 @@ def create_individual_map(input_tif_path: Path, output_tif_path: Path, borders_g
             data = (data * 100).astype(DTYPE)
         else:
             # This should never be reached given the assertions above
-            raise ValueError(f'Invalid map type {map_type}. Must be one of ["binary", "probability"]')
+            raise ValueError(f'Invalid map type {map_type}. Must be a valid map type: {MAP_TYPES}.')
 
         data[nan_mask] = NODATA_VALUE
 
         # Save intermediate file to disk
         print(f'Saving intermediate file {tmp_tif_path.name} to disk ...')
-        meta.update({'compress': COMPRESSION, 'dtype': DTYPE, 'nodata': NODATA_VALUE})
+        meta.update({'dtype': DTYPE, 'nodata': NODATA_VALUE})
         with rasterio.open(tmp_tif_path, 'w', **meta) as dst:
             dst.write(data, 1)
 
@@ -112,13 +112,15 @@ def create_individual_map(input_tif_path: Path, output_tif_path: Path, borders_g
     meta.update({"height": data.shape[0],
                 "width": data.shape[1],
                 "transform": transform,
+                "BIGTIFF": "YES",   # NOTE: Important to add when using compression for files bigger than 4GB: https://gdal.org/drivers/raster/gtiff.html#creation-options
                 "compress": COMPRESSION})
     
     with rasterio.open(output_tif_path, "w", **meta) as dst:
         dst.write(data, 1)
 
     # Remove intermediate tif file from disk
-    #os.remove(str(tmp_tif_path))
+    if REMOVE_FILES:
+        os.remove(str(tmp_tif_path))
 
 
 def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
@@ -129,7 +131,7 @@ def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
 
     # Target paths
     target_map_paths = {
-        map_type: preds_dir / f'{base_filename}_{map_type}_{DTYPE}_{COMPRESSION}_clipped.tif' for map_type in MAP_TYPES
+        map_type: preds_dir / f'{base_filename}_{map_type}_{DTYPE}_clipped_{COMPRESSION}.tif' for map_type in MAP_TYPES
         }
     if all([target_map_path.exists() for target_map_path in target_map_paths.values()]):
         print('Both target maps already exist!')
@@ -147,10 +149,11 @@ def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
             create_individual_map(raw_tif_path, target_tif_path, borders_geometry, map_type)
     
     # Remove raw tif from disk and vrt files
-    #os.remove(str(raw_tif_path))
-    #os.remove(str(raw_tif_path).replace('.tif', '.tif.aux.xml'))
-    #os.remove(str(raw_tif_path).replace('.tif', '.vrt'))
-    #os.system(f'rm -r {str(preds_dir / "vrt_files")}')
+    if REMOVE_FILES:
+        os.remove(str(raw_tif_path))
+        os.remove(str(raw_tif_path).replace('.tif', '.tif.aux.xml'))
+        os.remove(str(raw_tif_path).replace('.tif', '.vrt'))
+        os.system(f'rm -r {str(preds_dir / "vrt_files")}')
 
 
 def main(version: str) -> None:
@@ -167,7 +170,7 @@ def main(version: str) -> None:
 
 if __name__ == '__main__':
 
-    assert len(sys.argv) == 2, "Provide the map version number as an argument, e.g. 0, 1 or 2"
+    assert len(sys.argv) == 2, "Provide the map version number as an argument, e.g. 0, 1, 2, etc"
     version = sys.argv[1]
     assert version.isdigit(), "Version must be an integer."
     
