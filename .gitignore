@@ -186,12 +186,13 @@ files
 .mypy_cache/
 
 # Other
-data
 figures
 results
 scripts/lightning_logs
 notebooks/lightning_logs
 scripts/wandb
-TODOS.txt
-data_split_test
 notebooks/XX*
+
+# Data
+data
+data_split_test

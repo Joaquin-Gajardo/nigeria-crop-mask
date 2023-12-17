@@ -14,7 +14,7 @@ from rasterio.plot import show
 
 sys.path.append('..')
 
-from create_map_nigeria import COMPRESSION, DTYPE, MAP_TYPES
+from create_map_nigeria import COMPRESSION, DTYPE, MAP_TYPES, MAP_VERSION
 
 from src.utils.misc import get_great_circle_distance
 
@@ -102,12 +102,12 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", type=int, default=2, help="Map version number, e.g. 0, 1, 2, etc")
+    #parser.add_argument("--version", type=int, default=4, help="Map version number, e.g. 0, 1, 2, etc")
     parser.add_argument("--map_type", type=str, default='binary', choices=MAP_TYPES + ['both'], help=f"Map type, either {MAP_TYPES}, or 'both'")
     args = parser.parse_args()
 
     if args.map_type == 'both':
         for map_type in MAP_TYPES:
-            main(args.version, map_type)
+            main(MAP_VERSION, map_type)
     else:
-        main(args.version, args.map_type)
+        main(MAP_VERSION, args.map_type)

@@ -1,153 +1,63 @@
-# Nigeria Crop Mask 2020
+# :earth_africa: Nigeria Crop Mask :seedling:
+This repository contains the code and data of [Gajardo et. al (2023)](arxiv link) for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
 
-A pixel-wise land type classifier, used to generate a crop mask for Togo
-This repository contains code and data to generate a crop mask for Togo.
-It was used to deliver a high-resolution (10m) cropland mask in 10 days to help the government distribute aid to smallholder farmers during the COVID-19 pandemic.
+- :pencil: **[Paper](arxiv link):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
+- :clapper:**[Demo](https://nigeria-crop-mask.herokuapp.com/)**: an interactive visualization of the map and comparison to the ESA WorldCover 2020 land cover map can be found in Google Earth Engine (GEE).
+- :link: **[Map visualization script](https://code.earthengine.google.com/22ca87f617ca91ca8c6e5176fa2466c2) (needs a GEE account)**
 
-## Results
 
 <p align="center">
     <img src="assets/nigeria_cropland_probability_map_image.png" alt="Nigeria map" height="600px"/>
 </p>
 
-## Data
-It combines a hand-labelled dataset of crop / non-crop images with a [global database of crowdsourced cropland data](https://doi.pangaea.de/10.1594/PANGAEA.873912)
-to train a multi-headed LSTM-based model to predict the presence of cropland in a pixel.
-
-The map can be found on [Google Earth Engine](https://code.earthengine.google.com/5d8ff282e63c26610b7cd3b4a989929c).
+## :open_file_folder: Data
+The data used to train the LSTM model combines a hand-labelled dataset of crop and non-crop labels distributed throughout Nigeria (figure below) with a subset of the [global Geowiki cropland dataset](https://doi.pangaea.de/10.1594/PANGAEA.873912) to predict the presence of cropland in a pixel time series. The pixels time series consists of 12 monthly composites of remote sensing data at 10 m resolution, including Sentinel-1 and Sentinel-2 satellite images, as well as meteorological and topographic data. The training and inference data is processed using the [CropHarvest Python package](https://github.com/nasaharvest/cropharvest).
 
 <p align="center">
-    <img src="assets/nigeria_dataset_splits_new.png" alt="Nigeria map" height="600px"/>
+    <img src="assets/nigeria_dataset_splits_new.png" alt="Nigeria map" height="500px"/>
 </p>
 
-
-## Pipeline
-
-The main entrypoints into the pipeline are the [scripts](scripts). Specifically:
-
-* [scripts/export.py](scripts/export.py) exports data (locally, or to Google Drive - see below)
-* [scripts/process.py](scripts/process.py) processes the raw data
-* [scripts/engineer.py](scripts/engineer.py) combines the earth observation data with the labels to create (x, y) training data
-* [scripts/models.py](scripts/models.py) trains the models
-* [scripts/predict.py](scripts/predict.py) takes a trained model and runs it on exported tif files (the path to these files is defined in the script)
-
-The [split_tiff.py](scripts/split_tiff.py) script is useful to break large exports from Google Earth Engine, which may
-be too large to fit into memory.
-
-Once the pipeline has been run, the directory structure of the [data](data) folder should look like the following. If you get errors, a good first check would be to see if any files are missing.
-
-```
-data
-│   README.md
-│
-└───raw // raw exports
-│   └───togo  // this is included in this repo
-│   └───geowiki_landcover_2017  // exported by scripts.export.export_geowiki()
-│   └───earth_engine_togo  // exported to Google Drive by scripts.export.export_togo(), and must be copied here
-│   │                      // scripts.export.export_togo() expects processed/togo{_evaluation} to exist
-│   └───earth_engine_togo_evaluation  // exported to Google Drive by scripts.export.export_togo(), and must be copied here
-│   │                                 // scripts.export.export_togo() expects processed/togo{_evaluation} to exist
-│   └───earth_engine_geowiki  // exported to Google Drive by scripts.export.export_geowiki_sentinel_ee(), and must be copied here
-│                             // scripts.export.export_geowiki_sentinel_ee() expects processed/geowiki_landcover_2017 to exist
-│
-└──processed  // raw data processed for clarity
-│   └───geowiki_landcover_2017 // created by scripts.process.process_geowiki()
-│   │                          // which expects raw/geowiki_landcover_2017 to exist
-│   └───togo  // created by scripts.process.process_togo()
-│   └───togo_evaluation  // created by scripts.process.process_togo()
-│
-└──features  // the arrays which will be ingested by the model
-│   └───geowiki_landcover_2017 // created by scripts.engineer.engineer_geowiki()
-│   └───togo  // created by scripts.engineer.engineer_togo()
-│   └───togo_evaluation  // created by scripts.engineer.engineer_togo()
-│
-└──lightning_logs // created by pytorch_lightning when training models
-```
-
-### Steps
-```
-1. cd scripts
-2. python -c "from export.py import export_geowiki; export_geowiki()"
-3. python -c "from process.py import process_geowiki; process_geowiki()"
-4. python -c "from export.py import export_geowiki_sentinel_ee; export_geowiki_sentinel_ee() ## --> this might take up to 10 days and must be done by batches of 3000 tasks at a time (i.e. GEE task limit)."
-5. python -c "from process.py import process_togo; process_togo()"
-6. python -c "from export.py import export_togo; export_togo()"
-7. Repeat 6., but manually changing evaluation_set to False in exporter.export_for_labels inside export_togo() 
-8. python -c "from export.py import export_region; export_region()"
-9. python -c "from engineer.py import engineer_geowiki; engineer_geowiki()"
-
-10. python -c "from process.py import process_nigeria; process_nigeria()"
-11. python -c "from export.py import export_nigeria; export_nigeria()"
-11. python -c "from export.py import export_gdrive_nigeria; export_gdrive_nigeria()"
-12. python -c "from engineer_nigeria.py import engineer_nigeria; engineer_nigeria()"
-```
-
-## Setup
-
-### Enviroment
-[Anaconda](https://www.anaconda.com/download/#macos) running python 3.6 is used as the package manager. To get set up
-with an environment, install Anaconda from the link above, and (from this directory) run
-
+## :hammer: Setup
+The code was developed and tested on a Linux-based workstation using Python 3.7. For setting up the environment, install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or Anaconda and create a new environment:
+Alternatively, you can install the explicit environment:
 ```bash
-conda env create -f environment.yml
-```
-This will create an environment named `nigeria-crop-mask` with all the necessary packages to run the code. To
-activate this environment, run
-
-```bash
-conda activate nigeria-crop-mask
-```
-To use a GPU enviroment, run:
-```bash
-conda env create -f environment-gpu.yml
+conda env create -f envs/env_gpu_explicit.yml
 conda activate nigeria-crop-mask-gpu
 ```
 
-#### Manual installation
-For GPU, my gpu [can't use](https://discuss.pytorch.org/t/torch-being-installed-with-cpu-only-even-when-i-have-a-gpu/135060/8) cuda toolkit 10.2, and otherwise always installs pytorch with cpu. The following works, based on [pytorch](https://pytorch.org/get-started/previous-versions/#linux-and-windows):
-```
-conda install python=3.7
-#conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 cudatoolkit=11.7 -c pytorch -c conda-forge
-#conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
-conda install pytorch==1.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
-conda install -c conda-forge pytorch-lightning"<=1.0" # 0.8.5 works with one gpu, put not with ddp
-#conda install -c conda-forge pytorch-lightning=1.8 # breaks due to need of doing self.save_hyperparameters() instead of self.hparams = hparams
-conda install matplotlib geopandas xarray tqdm scikit-learn rasterio jupyter cartopy
-conda install -c conda-forge earthengine-api wandb
-conda install google-auth-oauthlib
-```
-However, GPU doesn't make it faster but slower actually, compared to just using more cores (n_workers) for the data loaders (2x speedup).
-
-Install geemap environment:
+If you run into package conflicts, you can try to install the dependencies manually:
 ```bash
-conda create -n geemap
-conda activate geemap
-conda install geopandas
-conda install geemp -c conda-forge
+conda env create -f envs/environment-gpu.yml # GPU environment
+conda env create -f envs/environment.yml # CPU environment
 ```
+### Google Earth Engine (optional)
 
-### Earth Engine
-
-Earth engine is used to export data. To use it, once the conda environment has been activated, run
+We provide the labels in this repository [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/), as well as the respective data arrays in [google drive](link), but if you want to create the dataset yourself or download the inference data (uses 10TB of disk space though!) you will need a Google Earth Engine account. To use it, activate the conda environment, create a GEE acount and authenticate your account on the CL or in a Jupyter notebook:
 
 ```bash
-earthengine authenticate
+earthengine authenticate # CL
+python -c "import ee; ee.Authenticate()" # Jupyter notebook
 ```
 
-and follow the instructions. To test that everything has worked, run
+Note that Google Earth Engine (GEE) exports files to Google Drive by default (to the same google account used to sign up to GEE).
+Running exports can be viewed (and individually cancelled) in the `Tabs` bar on the [GEE Code Editor](https://code.earthengine.google.com/).
+
+## :computer: Code
+
+The main entrypoints into the pipeline are the [scripts](scripts) and the [notebooks](notebooks/). The `src` folder provides the implementation of the model, data exporters, utilities, etc. The `data` folder contains the raw data and the processed data. The `models` folder contains the trained models.
+
+### Data preparation
+* [scripts/export.py](scripts/export.py) exports data (locally, or to Google Drive - see below)
+* [scripts/process.py](scripts/process.py) processes the raw data
+* [scripts/engineer.py](scripts/engineer.py) combines the earth observation data with the labels to create (x, y) training data
+   
+### Training and testing
+The scrip [scripts/models.py](scripts/models.py) is used to train models. The main results table of the paper can be reproduced using the following scripts, which run experiments with different training dataset configurations:
 
 ```bash
-python -c "import ee; ee.Initialize()"
+bash run_experiments.sh final lstm 64 1 0.2 2 100 False True False
+python scrips/parse_results.py final lstm
 ```
-
-Note that Earth Engine exports files to Google Drive by default (to the same google account used sign up to Earth Engine).
-
-Running exports can be viewed (and individually cancelled) in the `Tabs` bar on the [Earth Engine Code Editor](https://code.earthengine.google.com/).
-For additional support the [Google Earth Engine forum](https://groups.google.com/forum/#!forum/google-earth-engine-developers) is super
-helpful.
-
-Exports from Google Drive should be saved in [`data/raw`](data/raw).
-This happens by default if the [GDrive](src/exporters/gdrive.py) exporter is used.
 
 ### Inference
 For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest. Then run the following command:
@@ -155,12 +65,19 @@ For using a trained model for inference on satellite images, first download the 
 ```bash
 python scripts/inference_nigeria.py
 ```
+### Map creation
+The final maps and the map figures of the paper are created using the following scripts.
+```bash
+python scripts/create_map.py
+python scripts/create_figure_nigeria_map.py
+```
 
-## Acknowledgements
-This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) work. In particular, we used their [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) as a template and relied heavily on the the [CropHarvest](https://github.com/nasaharvest/cropharvest) package.
 
-## Citation
+## :pray: Acknowledgements
+This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) and their open-source software. In particular, we relied on [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) as an initial template and on the [CropHarvest](https://github.com/nasaharvest/cropharvest) package for our final code.
 
-If you find this code useful, please cite the following paper:
+## :bookmark_tabs: Citation
 
-The hand-labeled training and test data used in the above paper can be found at: https://doi.org/10.5281/zenodo.3836629
+If you find this code, data or our paper useful, please cite us:
+    
+    ```

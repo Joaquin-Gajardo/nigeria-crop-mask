@@ -19,6 +19,7 @@ import rasterio
 from rasterio.mask import mask
 from tqdm import tqdm
 
+MAP_VERSION = 4
 MAP_TYPES = ['binary', 'probability']
 DTYPE = rasterio.uint8
 NODATA_VALUE = 255 
@@ -156,9 +157,9 @@ def create_maps(preds_dir: Path, base_filename: str = 'combined') -> None:
         os.system(f'rm -r {str(preds_dir / "vrt_files")}')
 
 
-def main(version: str) -> None:
+def main() -> None:
 
-    preds_dir = Path(f"../data/predictions/nigeria-cropharvest-full-country-2020/v{version}")
+    preds_dir = Path(f"../data/predictions/nigeria-cropharvest-full-country-2020/v{MAP_VERSION}")
     if not preds_dir.exists():
         print(f'{preds_dir} does not exist, exiting!')
         return
@@ -170,9 +171,9 @@ def main(version: str) -> None:
 
 if __name__ == '__main__':
 
-    assert len(sys.argv) == 2, "Provide the map version number as an argument, e.g. 0, 1, 2, etc"
-    version = sys.argv[1]
-    assert version.isdigit(), "Version must be an integer."
+    # assert len(sys.argv) == 2, "Provide the map version number as an argument, e.g. 0, 1, 2, etc"
+    # version = sys.argv[1]
+    # assert version.isdigit(), "Version must be an integer."
     
-    main(version)
+    main()
 
