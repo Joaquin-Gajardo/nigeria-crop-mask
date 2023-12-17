@@ -2,10 +2,10 @@ r"""
 All the model bases, which take as input the raw timeseries
 and return a vector
 """
-from .lstm import LSTM
+from .rnn import LSTM, GRU
 
 
-STR2BASE = {"lstm": LSTM}
+STR2BASE = {"lstm": LSTM, "gru": GRU}
 
 
 __all__ = ["STR2BASE"]

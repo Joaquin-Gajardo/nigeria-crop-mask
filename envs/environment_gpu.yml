@@ -1,0 +1,28 @@
+name: nigeria-crop-mask-gpu
+channels:
+  - defaults
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.7  # earthengine doesn't play with python 3.7 # python 3.6 gives several conflicts
+  - pandas
+  - xarray
+  - rasterio
+  - jupyter
+  - matplotlib
+  - pytorch=1.13.1
+  - pytorch-cuda=11.7
+  - pyproj
+  - tqdm
+  - geopandas
+  - cartopy
+  - scikit-learn
+  - conda-forge::pytorch-lightning=0.8.5 # 0.7.1 not available on conda-forge
+  - google-auth-oauthlib 
+  - conda-forge::earthengine-api
+  - conda-forge::rioxarray
+  - conda-forge::wandb
+  - conda-forge::geemap
+  - pip:
+    - cropharvest

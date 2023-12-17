@@ -1,0 +1,27 @@
+name: nigeria-crop-mask
+channels:
+  - defaults
+dependencies:
+  - python=3.6  # earthengine doesn't play with python 3.7
+  #- earthengine-api
+  - pandas
+  - xarray
+  - rasterio
+  - jupyter
+  - matplotlib
+  - pytorch
+  #- cudatoolkit
+  - pyproj
+  - tqdm
+  - geopandas
+  - cartopy
+  - scikit-learn
+  - pip:
+      - pytorch-lightning==0.7.1  # lots of API breaking changes
+      - google-api-python-client  # google drive
+      - google-auth-httplib2  # google drive
+      - google-auth-oauthlib  # google drive
+      #- gdown  # google drive
+      - earthengine-api
+      - rioxarray # newly added to write xarrays to tiff
+      - wandb

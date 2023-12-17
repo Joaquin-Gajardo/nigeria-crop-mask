@@ -68,25 +68,58 @@ data
 7. Repeat 6., but manually changing evaluation_set to False in exporter.export_for_labels inside export_togo() 
 8. python -c "from export.py import export_region; export_region()"
 9. python -c "from engineer.py import engineer_geowiki; engineer_geowiki()"
-10. python -c "from engineer.py import engineer_togo; engineer_togo()"
+
+10. python -c "from process.py import process_nigeria; process_nigeria()"
+11. python -c "from export.py import export_nigeria; export_nigeria()"
+11. python -c "from export.py import export_gdrive_nigeria; export_gdrive_nigeria()"
+12. python -c "from engineer_nigeria.py import engineer_nigeria; engineer_nigeria()"
 ```
 
 ## Setup
 
+### Enviroment
 [Anaconda](https://www.anaconda.com/download/#macos) running python 3.6 is used as the package manager. To get set up
 with an environment, install Anaconda from the link above, and (from this directory) run
 
 ```bash
 conda env create -f environment.yml
 ```
-This will create an environment named `landcover-mapping` with all the necessary packages to run the code. To
+This will create an environment named `nigeria-crop-mask` with all the necessary packages to run the code. To
 activate this environment, run
 
 ```bash
-conda activate landcover-mapping
+conda activate nigeria-crop-mask
+```
+To use a GPU enviroment, run:
+```bash
+conda env create -f environment-gpu.yml
+conda activate nigeria-crop-mask-gpu
 ```
 
-#### Earth Engine
+#### Manual installation
+For GPU, my gpu [can't use](https://discuss.pytorch.org/t/torch-being-installed-with-cpu-only-even-when-i-have-a-gpu/135060/8) cuda toolkit 10.2, and otherwise always installs pytorch with cpu. The following works, based on [pytorch](https://pytorch.org/get-started/previous-versions/#linux-and-windows):
+```
+conda install python=3.7
+#conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 cudatoolkit=11.7 -c pytorch -c conda-forge
+#conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pytorch==1.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install -c conda-forge pytorch-lightning"<=1.0" # 0.8.5 works with one gpu, put not with ddp
+#conda install -c conda-forge pytorch-lightning=1.8 # breaks due to need of doing self.save_hyperparameters() instead of self.hparams = hparams
+conda install matplotlib geopandas xarray tqdm scikit-learn rasterio jupyter cartopy
+conda install -c conda-forge earthengine-api wandb
+conda install google-auth-oauthlib
+```
+However, GPU doesn't make it faster but slower actually, compared to just using more cores (n_workers) for the data loaders (2x speedup).
+
+Install geemap environment:
+```bash
+conda create -n geemap
+conda activate geemap
+conda install geopandas
+conda install geemp -c conda-forge
+```
+
+### Earth Engine
 
 Earth engine is used to export data. To use it, once the conda environment has been activated, run
 
@@ -108,6 +141,18 @@ helpful.
 
 Exports from Google Drive should be saved in [`data/raw`](data/raw).
 This happens by default if the [GDrive](src/exporters/gdrive.py) exporter is used.
+
+### Inference
+For inference:
+```
+conda activate nigeria-crop-mask-gpu
+
+# in scripts/predict_gpu.py :
+- Change model_path to checkpoint that was run with same enviroment and GPU
+- Chenga use_gpu to True in model.predict
+- Increase batch size
+
+```
 
 #### Tests
 
