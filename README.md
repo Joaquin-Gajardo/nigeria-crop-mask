@@ -1,18 +1,25 @@
-# Togo Crop Mask
+# Nigeria Crop Mask 2020
 
 A pixel-wise land type classifier, used to generate a crop mask for Togo
-
-## Introduction
-
 This repository contains code and data to generate a crop mask for Togo.
 It was used to deliver a high-resolution (10m) cropland mask in 10 days to help the government distribute aid to smallholder farmers during the COVID-19 pandemic.
 
-<img src="diagrams/togo_map.jpg" alt="Togo map" height="400px"/>
+## Results
 
+<p align="center">
+    <img src="assets/nigeria_cropland_probability_map_image.png" alt="Nigeria map" height="600px"/>
+</p>
+
+## Data
 It combines a hand-labelled dataset of crop / non-crop images with a [global database of crowdsourced cropland data](https://doi.pangaea.de/10.1594/PANGAEA.873912)
 to train a multi-headed LSTM-based model to predict the presence of cropland in a pixel.
 
 The map can be found on [Google Earth Engine](https://code.earthengine.google.com/5d8ff282e63c26610b7cd3b4a989929c).
+
+<p align="center">
+    <img src="assets/nigeria_dataset_splits_new.png" alt="Nigeria map" height="600px"/>
+</p>
+
 
 ## Pipeline
 
@@ -143,31 +150,17 @@ Exports from Google Drive should be saved in [`data/raw`](data/raw).
 This happens by default if the [GDrive](src/exporters/gdrive.py) exporter is used.
 
 ### Inference
-For inference:
-```
-conda activate nigeria-crop-mask-gpu
-
-# in scripts/predict_gpu.py :
-- Change model_path to checkpoint that was run with same enviroment and GPU
-- Chenga use_gpu to True in model.predict
-- Increase batch size
-
-```
-
-#### Tests
-
-The following tests can be run against the pipeline:
+For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest. Then run the following command:
 
 ```bash
-pytest  # unit tests, written in the test folder
-black .  # code formatting
-mypy src  # type checking
+python scripts/inference_nigeria.py
 ```
 
-## Reference
+## Acknowledgements
+This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) work. In particular, we used their [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) as a template and relied heavily on the the [CropHarvest](https://github.com/nasaharvest/cropharvest) package.
+
+## Citation
 
 If you find this code useful, please cite the following paper:
-
-Hannah Kerner, Gabriel Tseng, Inbal Becker-Reshef, Catherine Nakalembe, Brian Barker, Blake Munshell, Madhava Paliyam, and Mehdi Hosseini. 2020. Rapid Response Crop Maps in Data Sparse Regions. KDD ’20: ACMSIGKDD Conference on Knowledge Discovery and Data Mining Workshops, August 22–27, 2020, San Diego, CA.
 
 The hand-labeled training and test data used in the above paper can be found at: https://doi.org/10.5281/zenodo.3836629
