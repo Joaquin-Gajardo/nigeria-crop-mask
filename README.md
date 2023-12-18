@@ -2,10 +2,11 @@
 This repository contains the code and data of [Gajardo et. al (2023)](arxiv link) for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
 
 Links:
-- :pencil: **[Paper](arxiv link):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
-- :clapper:**[Demo](https://nigeria-crop-mask.herokuapp.com/)**: a Google Earth Engine (GEE) app to interactively visualize the output maps map and compare them to the ESA WorldCover 2020 land cover map.
-- :open_file_folder:**[New Nigeria cropland dataset (Google Drive link)](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)**
-- :link: **[Map visualization script](https://code.earthengine.google.com/22ca87f617ca91ca8c6e5176fa2466c2) (needs a GEE account)**
+- :clapper:**[Demo (coming soon!):](https://code.earthengine.google.com/df4bf4a222269289e982de7a48fb68fc)** a Google Earth Engine (GEE) app to interactively visualize the output maps map and compare them to the ESA WorldCover 2020 land cover map, size-by-side.
+- :pencil: **[Paper](arxiv preprint):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
+- :open_file_folder:**[New Nigeria cropland dataset:](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)** Google Drive link with the new hand-labelled binary Nigeria cropland dataset (labelled by one expert via remote photointerpretation) and the respective `hd5f` data arrays.
+- :satellite: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020.
+- :eyes: **[Map visualization script (needs a GEE account)](https://code.earthengine.google.com/df4bf4a222269289e982de7a48fb68fc):** a Google Earth Engine (GEE) script to interactively visualize the output maps map and compare them to the ESA WorldCover 2020 land cover map.
 
 
 <p align="center">
@@ -79,7 +80,7 @@ python scripts/create_figure_nigeria_map.py
 
 
 ## :pray: Acknowledgements
-This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) and their open-source software. In particular, we relied on [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) as an initial template and on the [CropHarvest](https://github.com/nasaharvest/cropharvest) package for our final code.
+This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) and their open-source software. In particular, we relied on [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) paper and code for conceiving the idea and as an initial code template, and on the [CropHarvest](https://github.com/nasaharvest/cropharvest) package for the final version of our code.
 
 ## :bookmark_tabs: Citation
 
