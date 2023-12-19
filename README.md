@@ -1,9 +1,9 @@
 # :earth_africa: Nigeria Crop Mask :seedling:
-This repository contains the code and data of [Gajardo et. al (2023)](arxiv link) for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
+This repository contains the code and data supporting [Gajardo et. al (2023)](https://arxiv.org/abs/2312.10872), for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
 
 Links:
 - :clapper:**[Demo:](https://joaquingajardocastillo.users.earthengine.app/view/nigeria-cropland-maps)** a Google Earth Engine (GEE) app to interactively visualize the output maps map and compare them to the ESA WorldCover 2020 land cover map, size-by-side.
-- :pencil: **[Paper](arxiv preprint):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
+- :pencil: **[Paper](https://arxiv.org/abs/2312.10872):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
 - :open_file_folder:**[New Nigeria cropland dataset:](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)** Google Drive link with the new hand-labelled binary Nigeria cropland dataset (labelled by one expert via remote photointerpretation) and the respective `hd5f` data arrays.
 - :eyes: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020.
 
@@ -82,6 +82,15 @@ This work was largely based on the amazing work by [NASA Harvest](https://nasaha
 
 ## :bookmark_tabs: Citation
 
-If you find this code, data or our paper useful, please cite us:
+If you find our work useful, please cite our paper:
     
-    ```
+```bibtex
+@misc{gajardo2023countryscale,
+    title={Country-Scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: A Case Study of Nigeria}, 
+    author={Joaquin Gajardo and Michele Volpi and Daniel Onwude and Thijs Defraeye},
+    year={2023},
+    eprint={2312.10872},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
