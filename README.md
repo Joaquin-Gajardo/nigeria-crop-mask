@@ -19,8 +19,7 @@ The data used to train the LSTM model combines a new hand-labelled [dataset]() o
 </p>
 
 ## :hammer: Setup
-The code was developed and tested on a Linux-based workstation using Python 3.7. For setting up the environment, install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or Anaconda and create a new environment:
-Alternatively, you can install the explicit environment:
+The code was developed and tested on a Linux-based workstation using Python 3.7. For setting up the environment, install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or Anaconda, and you can create a new environment using the the explicit environment yaml file we provide:
 ```bash
 conda env create -f envs/env_gpu_explicit.yml
 conda activate nigeria-crop-mask-gpu
@@ -33,7 +32,7 @@ conda env create -f envs/environment.yml # CPU environment
 ```
 ### [Optional] Google Earth Engine (GEE)
 
-We provide the labels in this repository [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/), as well as the respective data arrays in [Google Drive](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), but if you want to create the dataset yourself (~600MB of disk space) or download the inference data (10TB of disk space!) you will need to create a [GEE account](https://code.earthengine.google.com/register). You can use it with your conda environment after authentication in the command line or in a Jupyter notebook:
+We provide the labels in this repository [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/), as well as the respective data arrays in [Google Drive](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), but if you want to create the dataset yourself or download the inference data (10TB of disk space!) you will need a [GEE account](https://code.earthengine.google.com/register). You can use it with your conda environment after authentication in the command line or in a Jupyter notebook:
 
 ```bash
 earthengine authenticate # CL
@@ -45,7 +44,7 @@ Running exports can be viewed (and individually cancelled) in the `Tabs` bar on 
 
 ## :computer: Code
 
-The main entrypoints into the pipeline are the [scripts](scripts) and the [Jupyter notebooks](notebooks/). The `src` folder provides the implementation of the model, data exporters, utilities, etc. The `data` folder contains the raw data and the processed data. The `models` folder contains the trained models.
+The main entrypoints into the pipeline are the [scripts](scripts) and the [Jupyter notebooks](notebooks/). The main code is on the `src` folder, which provides the implementation of the model, data exporters, utilities, etc.
 
 ### Data preparation
 You may directly download the data of the Nigeria dataset from the following [Google Drive link](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), and put the contents in the [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/) folder. The Geowiki data will be automatically downloaded by the CropHarvest package the first time a model is trained.
@@ -64,7 +63,7 @@ For reproducing the results of the Random Forest and the global landcover map ba
 
 
 ### Inference
-For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest (see [notebook 16](notebooks/16_cropharvest_sentinel1_export_region_nigeria.ipynb)). Then run the following command:
+For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest (see [notebook 16](notebooks/16_cropharvest_sentinel1_export_region_nigeria.ipynb)). Then run the following script (you will need to adjust the path to the model within the file).
 
 ```bash
 python scripts/inference_nigeria.py
