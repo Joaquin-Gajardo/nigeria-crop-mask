@@ -19,7 +19,7 @@ The data used to train the LSTM model combines a new hand-labelled [dataset]() o
 </p>
 
 ## :hammer: Setup
-The code was developed and tested on a Linux-based workstation using Python 3.7. For setting up the environment, install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or Anaconda, and you can create a new environment using the the explicit environment yaml file we provide:
+The code was developed and tested on a Linux-based workstation using Python 3.7. For setting up the environment, install [miniconda](https://docs.conda.io/projects/miniconda/en/latest/) or Anaconda, and you can create a new environment using the explicit environment yaml file we provide:
 ```bash
 conda env create -f envs/env_gpu_explicit.yml
 conda activate nigeria-crop-mask-gpu
