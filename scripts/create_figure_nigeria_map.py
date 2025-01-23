@@ -45,9 +45,9 @@ def main(version: int, map_type: str = 'binary') -> None:
     borders = gpd.read_file(Path('../assets/nigeria_borders.shp'))
     borders.boundary.plot(ax=ax, color='grey', linewidth=0.5)
 
-    nigeria_states = gpd.read_file('../assets/ngaadmbndaadm1osgof20161215.geojson')
-    nigeria_states.to_crs(borders.crs, inplace=True)
-    nigeria_states.boundary.plot(ax=ax, color='grey', linewidth=0.5)
+    # nigeria_states = gpd.read_file('../assets/ngaadmbndaadm1osgof20161215.geojson')
+    # nigeria_states.to_crs(borders.crs, inplace=True)
+    # nigeria_states.boundary.plot(ax=ax, color='grey', linewidth=0.5)
     
     # Plot map
     if map_type == 'binary':
@@ -90,12 +90,14 @@ def main(version: int, map_type: str = 'binary') -> None:
     # Title and axes
     plt.title(f"Nigeria 2020 cropland {map_type} map", fontsize=24)
     ax.tick_params(labelsize=16)
-    plt.xlabel("Longitude", fontsize=20)
-    plt.ylabel("Latitude", fontsize=20)
+    plt.xlabel("Longitude (°)", fontsize=20)
+    plt.ylabel("Latitude (°)", fontsize=20)
     plt.minorticks_on()
+    ax.set_xlim(2, 15.2)
+    ax.set_ylim(3.7, 14.3)
 
     print(f'Saving figure to disk ...')
-    plt.savefig(str(tif_path).replace('.tif', '_states.pdf'), dpi=300)
+    plt.savefig(str(tif_path).replace('.tif', '_latest.pdf'), dpi=300)
 
 
 if __name__ == '__main__':
