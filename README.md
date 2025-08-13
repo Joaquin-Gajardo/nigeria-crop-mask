@@ -1,9 +1,10 @@
 # :earth_africa: Nigeria Crop Mask :seedling:
-This repository contains the code and data supporting [Gajardo et. al (2023)](https://arxiv.org/abs/2312.10872), for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
+This repository contains the code and data supporting [Gajardo et. al (2025)](https://www.sciencedirect.com/science/article/pii/S2667393225000109), for training a pixel-wise LSTM binary classifier to predict cropland vs non-cropland from remote sensing data and using it to generate two cropland maps for Nigeria for the year 2020. The code is largely based on the work of [Kerner et. al (2020)](https://arxiv.org/abs/2006.16866) from NASA Harvest, who build a similar cropland mask for Togo.
 
 Links:
+- :pencil: **[Paper](https://www.sciencedirect.com/science/article/pii/S2667393225000109):** Gajardo et. al (2025), *Evaluating the Role of Training Data Origin for Country-Scale Cropland Mapping in Data-Scarce Regions: A Case Study of Nigeria.*
+- :pencil: **[Preprint](https://arxiv.org/abs/2312.10872):** Gajardo et. al (2025), *Evaluating the Role of Training Data Origin for Country-Scale Cropland Mapping in Data-Scarce Regions: A Case Study of Nigeria.*
 - :clapper:**[Demo:](https://joaquingajardocastillo.users.earthengine.app/view/nigeria-cropland-maps)** a Google Earth Engine (GEE) app to interactively visualize the output maps map and compare them to the ESA WorldCover 2020 land cover map, size-by-side.
-- :pencil: **[Paper](https://arxiv.org/abs/2312.10872):** Gajardo et. al (2023), *Country-scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: a Case Study of Nigeria.*
 - :open_file_folder:**[New Nigeria cropland dataset:](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)** Google Drive link with the new hand-labelled binary Nigeria cropland dataset (labelled by one expert via remote photointerpretation) and the respective `hd5f` data arrays.
 - :eyes: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020.
 
@@ -15,7 +16,7 @@ Links:
 The data used to train the LSTM model combines a new hand-labelled [dataset]() of crop and non-crop labels distributed throughout Nigeria (figure below) with a subset of the [global Geowiki cropland dataset](https://doi.pangaea.de/10.1594/PANGAEA.873912) to predict the presence of cropland in a pixel time series. The pixels time series consists of 12 monthly composites of remote sensing data at 10 m resolution, including Sentinel-1 and Sentinel-2 satellite images, as well as meteorological and topographic data. The training and inference data is processed using the [CropHarvest Python package](https://github.com/nasaharvest/cropharvest).
 
 <p align="center">
-    <img src="assets/nigeria_dataset_splits_new.png" alt="Nigeria map" height="500px"/>
+    <img src="assets/nigeria_dataset_splits_latest.png" alt="Nigeria map" height="630px"/>
 </p>
 
 ## :hammer: Setup
@@ -84,12 +85,15 @@ This work was largely based on the amazing work by [NASA Harvest](https://nasaha
 If you find our work useful, please cite our paper:
     
 ```bibtex
-@misc{gajardo2023countryscale,
-    title={Country-Scale Cropland Mapping in Data-Scarce Settings Using Deep Learning: A Case Study of Nigeria}, 
-    author={Joaquin Gajardo and Michele Volpi and Daniel Onwude and Thijs Defraeye},
-    year={2023},
-    eprint={2312.10872},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
+@article{GAJARDO2025100091,
+title = {Evaluating the role of training data origin for country-scale cropland mapping in data-scarce regions: A case study of Nigeria},
+journal = {ISPRS Open Journal of Photogrammetry and Remote Sensing},
+volume = {17},
+pages = {100091},
+year = {2025},
+issn = {2667-3932},
+doi = {https://doi.org/10.1016/j.ophoto.2025.100091},
+url = {https://www.sciencedirect.com/science/article/pii/S2667393225000109},
+author = {Joaquin Gajardo and Michele Volpi and Daniel Onwude and Thijs Defraeye},
 }
 ```
