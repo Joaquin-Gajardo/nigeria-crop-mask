@@ -54,10 +54,13 @@ def main(exp_name: str='final', model_name: str='lstm'):
     ]
 
     for good_column, bad_column in zip(columns_to_modify, columns_to_remove):
-        if bad_column in df.columns:
-            df.rename(columns={bad_column: good_column}, inplace=True)
-            df[good_column].fillna(df[bad_column], inplace=True)
+        if bad_column not in df.columns:
+            continue
+        if good_column in df.columns:
+            df[good_column] = df[good_column].fillna(df[bad_column])
             del df[bad_column]
+        else:
+            df.rename(columns={bad_column: good_column}, inplace=True)
 
     # Reordering columns and rows
     col = df.pop('final_epoch')
