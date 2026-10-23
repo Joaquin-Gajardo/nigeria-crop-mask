@@ -360,5 +360,6 @@ dependencies:
       - et-xmlfile==1.1.0
       - h5py==3.8.0
       - html5lib==1.1
+      - matplotlib-scalebar==0.8.1
       - openpyxl==3.1.2
-prefix: /home/gajo/miniconda3/envs/nigeria-crop-mask-gpu
+      - seaborn==0.12.2

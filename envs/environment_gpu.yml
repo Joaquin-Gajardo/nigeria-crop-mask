@@ -25,4 +25,6 @@ dependencies:
   - conda-forge::wandb
   - conda-forge::geemap
   - pip:
-    - cropharvest
+    - cropharvest==0.6.0
+    - matplotlib-scalebar
+    - seaborn
