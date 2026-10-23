@@ -48,6 +48,8 @@ The main entrypoints into the pipeline are the [scripts](scripts) and the [Jupyt
 
 Note that the scripts use paths relative to the `scripts` folder (e.g. `../data`), so they need to be run from inside it (`cd scripts`).
 
+The final pipeline used in the paper is based on the CropHarvest package (notebooks 13 onwards and the scripts described below). Notebooks 01–12 and the scripts `export.py`, `process.py`, `engineer.py` and `visualize.py` belong to an earlier version of the pipeline based on the [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) code, and are kept for reference (e.g. notebooks 09–11 document the creation of the Nigeria dataset).
+
 ### Data preparation
 You may directly download the data of the Nigeria dataset from the following [Google Drive link](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), and put the contents in the [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/) folder.
 
