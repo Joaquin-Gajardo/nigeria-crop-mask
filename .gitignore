@@ -19,3 +19,4 @@ data/features/*
 data/features/nigeria-cropharvest/*
 !data/features/nigeria-cropharvest/labels.geojson
 !data/features/nigeria-cropharvest/nigeria_stratified_labelled_v1_splits_resampled.*
+!data/features/nigeria-cropharvest/LICENSE.txt

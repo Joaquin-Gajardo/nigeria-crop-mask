@@ -92,7 +92,7 @@ python create_figure_nigeria_map.py
 
 
 ## :scroll: License
-The code in this repository is released under the [MIT License](LICENCE.md). The Nigeria cropland dataset (labels and data arrays), the cropland maps and the trained model checkpoint are released under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) license.
+The code in this repository is released under the [MIT License](LICENCE.md). The Nigeria cropland dataset (labels and data arrays), the cropland maps and the trained model checkpoint are released under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) license. The data arrays and the maps contain modified Copernicus Sentinel data [2019-2020] and modified Copernicus Climate Change Service information [2019-2020] (ERA5).
 
 Third-party data included in this repository keeps its original license: see [assets/readme.md](assets/readme.md) for the geographic boundaries. The Togo labels in [data/raw/togo](data/raw/togo/) are from the [Togo Cropland Map and Labeled Dataset](https://doi.org/10.5281/zenodo.3836629) (Kerner et al., 2020), released under CC BY 4.0.
 
