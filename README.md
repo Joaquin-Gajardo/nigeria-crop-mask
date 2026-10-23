@@ -6,7 +6,7 @@ Links:
 - :pencil: **[Preprint](https://arxiv.org/abs/2312.10872):** Gajardo et al. (2025), *Evaluating the Role of Training Data Origin for Country-Scale Cropland Mapping in Data-Scarce Regions: A Case Study of Nigeria.*
 - :clapper:**[Demo:](https://joaquingajardocastillo.users.earthengine.app/view/nigeria-cropland-maps)** a Google Earth Engine (GEE) app to interactively visualize the output maps and compare them to the ESA WorldCover 2020 land cover map, side-by-side.
 - :open_file_folder:**[New Nigeria cropland dataset:](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)** Google Drive link with the new hand-labelled binary Nigeria cropland dataset (labelled by one expert via remote photointerpretation) and the respective `hd5f` data arrays.
-- :eyes: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020.
+- :eyes: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020, and the trained model checkpoint used to generate them.
 
 <p align="center">
     <img src="assets/nigeria_cropland_probability_map_image.png" alt="Nigeria map" height="600px"/>
@@ -72,7 +72,9 @@ For reproducing the results of the Random Forest and the global landcover map ba
 
 
 ### Inference
-For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest (see [notebook 16](notebooks/16_cropharvest_sentinel1_export_region_nigeria.ipynb)). Then run the following script (you will need to adjust the path to the model within the file).
+For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest (see [notebook 16](notebooks/16_cropharvest_sentinel1_export_region_nigeria.ipynb)). Then run the following script (you will need to adjust `raw_folder` within the file to the folder with the downloaded satellite images).
+
+To use the trained model of the paper, download the `lightning_logs` folder from the [Maps link](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing) and place it in the `data` folder (i.e. `data/lightning_logs/version_949/checkpoints/epoch=22.ckpt`), which is the default `model_path` in the script. Note that loading the model requires the training data to be in place (Nigeria dataset and Geowiki features, see [Data preparation](#data-preparation)), as the normalization values are recomputed from it.
 
 ```bash
 cd scripts
