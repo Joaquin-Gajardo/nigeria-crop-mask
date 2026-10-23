@@ -1,4 +1,4 @@
-Copyright (c) 2023 Joaquin Gajardo
+Copyright (c) 2022-2025 Joaquin Gajardo, Empa - Swiss Federal Laboratories for Materials Science and Technology
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
