@@ -48,7 +48,7 @@ The main entrypoints into the pipeline are the [scripts](scripts) and the [Jupyt
 
 Note that the scripts use paths relative to the `scripts` folder (e.g. `../data`), so they need to be run from inside it (`cd scripts`).
 
-The final pipeline used in the paper is based on the CropHarvest package (notebooks 13 onwards and the scripts described below). Notebooks 01–12 and the scripts `export.py`, `process.py`, `engineer.py` and `visualize.py` belong to an earlier version of the pipeline based on the [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) code, and are kept for reference (e.g. notebooks 09–11 document the creation of the Nigeria dataset).
+The final pipeline used in the paper is based on the CropHarvest package (notebooks 13 onwards and the scripts described below). Notebooks 01–12 and the scripts `export.py`, `process.py`, `engineer.py` and `visualize.py` belong to an earlier version of the pipeline based on the [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) code, and are kept for reference. Notebooks 10 and 11 were used to create the train/validation/test splits of the Nigeria labels (`nigeria_stratified_labelled_v1_splits_resampled.shp`), which are then used by notebooks 13 and 14.
 
 ### Data preparation
 You may directly download the data of the Nigeria dataset from the following [Google Drive link](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), and put the contents in the [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/) folder.
@@ -90,6 +90,11 @@ python create_map_nigeria.py
 python create_figure_nigeria_map.py
 ```
 
+
+## :scroll: License
+The code in this repository is released under the [MIT License](LICENCE.md). The Nigeria cropland dataset (labels and data arrays), the cropland maps and the trained model checkpoint are released under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) license.
+
+Third-party data included in this repository keeps its original license: see [assets/readme.md](assets/readme.md) for the geographic boundaries. The Togo labels in [data/raw/togo](data/raw/togo/) are from the [Togo Cropland Map and Labeled Dataset](https://doi.org/10.5281/zenodo.3836629) (Kerner et al., 2020), released under CC BY 4.0.
 
 ## :pray: Acknowledgements
 This work was largely based on the amazing work by [NASA Harvest](https://nasaharvest.org/) and their open-source software. In particular, we relied on [togo-crop-mask](https://github.com/nasaharvest/togo-crop-mask) paper and code for conceiving the idea and as an initial code template, and on the [CropHarvest](https://github.com/nasaharvest/cropharvest) package for the final version of our code.
