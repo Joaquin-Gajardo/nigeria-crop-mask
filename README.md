@@ -28,8 +28,7 @@ conda activate nigeria-crop-mask-gpu
 
 If you run into package conflicts, you can try to install the dependencies manually:
 ```bash
-conda env create -f envs/environment_gpu.yml # GPU environment
-conda env create -f envs/environment.yml # CPU environment
+conda env create -f envs/environment_gpu.yml
 ```
 ### [Optional] Google Earth Engine (GEE)
 
@@ -47,8 +46,17 @@ Running exports can be viewed (and individually cancelled) in the `Tabs` bar on 
 
 The main entrypoints into the pipeline are the [scripts](scripts) and the [Jupyter notebooks](notebooks/). The main code is on the `src` folder, which provides the implementation of the model, data exporters, utilities, etc.
 
+Note that the scripts use paths relative to the `scripts` folder (e.g. `../data`), so they need to be run from inside it (`cd scripts`).
+
 ### Data preparation
-You may directly download the data of the Nigeria dataset from the following [Google Drive link](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), and put the contents in the [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/) folder. The Geowiki data will be automatically downloaded by the CropHarvest package the first time a model is trained.
+You may directly download the data of the Nigeria dataset from the following [Google Drive link](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link), and put the contents in the [data/features/nigeria-cropharvest](data/features/nigeria-cropharvest/) folder.
+
+The Geowiki data is part of the [CropHarvest dataset](https://zenodo.org/record/7257688). Before training, download its features (~70 MB) into `data/cropharvest` by running the following from the repository root:
+```bash
+mkdir -p data/cropharvest
+python -c "from cropharvest.utils import download_and_extract_archive; download_and_extract_archive('data/cropharvest', 'features')"
+```
+The CropHarvest labels (`labels.geojson`) are downloaded automatically the first time a model is trained. Note that the download above is skipped if a `data/cropharvest/features` folder already exists (e.g. an empty one left by a previous failed run), so delete it first in that case.
 
 **Optional:** If you want to re-create the dataset yourself, the main steps are exporting and engineering the features, which can be done using the following notebooks [13](notebooks/13_cropharvest_sentinel1.ipynb) and [14](notebooks/14_cropharvest_sentinel1_engineer_nigeria.ipynb).
 
@@ -67,13 +75,15 @@ For reproducing the results of the Random Forest and the global landcover map ba
 For using a trained model for inference on satellite images, first download the satellite images of the region using the regional exporter from CropHarvest (see [notebook 16](notebooks/16_cropharvest_sentinel1_export_region_nigeria.ipynb)). Then run the following script (you will need to adjust the path to the model within the file).
 
 ```bash
-python scripts/inference_nigeria.py
+cd scripts
+python inference_nigeria.py
 ```
 ### Map creation
 The final maps and the map figures of the paper are created using the following scripts.
 ```bash
-python scripts/create_map_nigeria.py
-python scripts/create_figure_nigeria_map.py
+cd scripts
+python create_map_nigeria.py
+python create_figure_nigeria_map.py
 ```
 
 
