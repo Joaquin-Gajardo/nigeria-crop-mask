@@ -4,7 +4,7 @@ This repository contains the code and data supporting [Gajardo et al. (2025)](ht
 Links:
 - :pencil: **[Paper](https://www.sciencedirect.com/science/article/pii/S2667393225000109):** Gajardo et al. (2025), *Evaluating the Role of Training Data Origin for Country-Scale Cropland Mapping in Data-Scarce Regions: A Case Study of Nigeria.*
 - :pencil: **[Preprint](https://arxiv.org/abs/2312.10872):** Gajardo et al. (2025), *Evaluating the Role of Training Data Origin for Country-Scale Cropland Mapping in Data-Scarce Regions: A Case Study of Nigeria.*
-- :clapper:**[Demo:](https://joaquingajardocastillo.users.earthengine.app/view/nigeria-cropland-maps)** a Google Earth Engine (GEE) app to interactively visualize the output maps and compare them to the ESA WorldCover 2020 land cover map, side-by-side.
+- :clapper:**[Demo:](https://joaquingajardocastillo.users.earthengine.app/view/nigeria-cropland-maps)** a Google Earth Engine (GEE) app to interactively visualize the output maps and compare them to the ESA WorldCover 2020 land cover map, side-by-side. Its source code is in [gee_app](gee_app/nigeria_cropland_maps_app.js).
 - :open_file_folder:**[New Nigeria cropland dataset:](https://drive.google.com/drive/folders/1rJhh-UMknwOH14O-RFWpNfIViveUgE_5?usp=drive_link)** Google Drive link with the new hand-labelled binary Nigeria cropland dataset (labelled by one expert via remote photointerpretation) and the respective `hd5f` data arrays.
 - :eyes: **[Maps:](https://drive.google.com/drive/folders/10MO0rJZ66dHLTdHDP-kWi_Da8SpjDjNO?usp=sharing)** Google Drive link with the final cropland and cropland probability maps for Nigeria 2020, and the trained model checkpoint used to generate them.
 
